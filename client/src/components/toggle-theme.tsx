@@ -11,7 +11,7 @@ function ToggleTheme() {
 
   return (
     <Button
-      variant="outline"
+      variant="ghost"
       onClick={handleThemeChange}
       className="transition-transform duration-300"
     >
