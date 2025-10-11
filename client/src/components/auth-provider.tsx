@@ -1,59 +1,72 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { z } from "zod";
+import type { AuthSession } from "@/types/auth";
+import type { AuthContextType } from "@/types/auth.context";
+import { getSession, signOut, signInWithGoogle } from "@/utils/auth";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 
-const userSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  email: z.email(),
-  token: z.string().optional(),
-});
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<AuthSession | null>(null);
+  const [loading, setLoading] = useState(true);
 
-type User = z.infer<typeof userSchema>;
-
-type AuthContextType = {
-  user: User | null;
-  setUser: (data: unknown) => void;
-};
-const AuthProviderContext = createContext<AuthContextType | undefined>(
-  undefined
-);
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUserState] = useState<User | null>(null);
   useEffect(() => {
-    const stored = localStorage.getItem("user");
-
-    if (stored) {
-      try {
-        const parsed = userSchema.parse(JSON.parse(stored));
-        setUserState(parsed);
-      } catch (error) {
-        localStorage.removeItem("user");
+    const loadSession = async () => {
+      setLoading(true);
+      const sessionResult = await getSession();
+      const u = sessionResult?.data?.user;
+      if (u) {
+        setUser({
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          picture: u.image || "",
+        });
+      } else {
+        setUser(null);
       }
-    }
+      setLoading(false);
+    };
+
+    loadSession();
   }, []);
 
-  const setUser = (data: unknown) => {
-    const parsed = userSchema.safeParse(data);
+  const refreshSession = async () => {
+    const sessionResult = await getSession();
+    const u = sessionResult?.data?.user;
 
-    if (!parsed.success) {
-      console.error("Invalid user data:", parsed.error.flatten());
-      return;
+    if (u) {
+      setUser({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        picture: u.image || "",
+      });
+    } else {
+      setUser(null);
     }
-    setUserState(parsed.data);
-    localStorage.setItem("user", JSON.stringify(parsed.data));
   };
+
+  const signOutUser = async () => {
+    await signOut();
+    setUser(null);
+  };
+
   return (
-    <AuthProviderContext.Provider value={{ user, setUser }}>
+    <AuthContext.Provider
+      value={{ user, loading, signInWithGoogle, signOutUser, refreshSession }}
+    >
       {children}
-    </AuthProviderContext.Provider>
+    </AuthContext.Provider>
   );
-}
+};
 
 export const useAuth = () => {
-  const context = useContext(AuthProviderContext);
-
-  if (context === undefined)
-    throw new Error("useAuth must be within a AuthProvider");
-
+  const context = useContext(AuthContext);
+  if (!context) throw new Error("useAuth must be with in an AuthProvider");
   return context;
 };

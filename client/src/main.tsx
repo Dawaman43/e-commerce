@@ -4,14 +4,16 @@ import "./index.css";
 import App from "./App.tsx";
 import { ThemeProvider } from "./components/theme-provider.tsx";
 import { BrowserRouter } from "react-router-dom";
-import Header from "./components/layout/header.tsx";
+import Header from "./components/header/header.tsx";
 import { AuthProvider } from "./components/auth-provider.tsx";
+import { Toaster } from "sonner";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+          <Toaster richColors position="top-right" />
           <Header />
           <App />
         </ThemeProvider>
