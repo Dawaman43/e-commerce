@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,7 @@ type Order = {
   date: string;
   price: string;
   location: string;
+  productId?: number; // Added optional productId for linking to product page
 };
 
 // Mock data - replace with API fetch (e.g., useQuery for active orders)
@@ -46,6 +48,7 @@ const mockOrders: Order[] = [
     date: "Oct 10, 2025",
     price: "$150",
     location: "Brooklyn, NY",
+    productId: 4, // Linked to product id
   },
   {
     id: "#ORD-12346",
@@ -55,6 +58,7 @@ const mockOrders: Order[] = [
     date: "Oct 12, 2025",
     price: "Trade for PS5",
     location: "Manhattan, NY",
+    productId: 5, // Linked to product id
   },
   {
     id: "#ORD-12347",
@@ -64,6 +68,7 @@ const mockOrders: Order[] = [
     date: "Oct 9, 2025",
     price: "$25",
     location: "Queens, NY",
+    // No productId, so no link
   },
   {
     id: "#ORD-12348",
@@ -73,6 +78,7 @@ const mockOrders: Order[] = [
     date: "Oct 11, 2025",
     price: "$300",
     location: "Harlem, NY",
+    // No productId, so no link
   },
   {
     id: "#ORD-12349",
@@ -82,6 +88,7 @@ const mockOrders: Order[] = [
     date: "Oct 13, 2025",
     price: "Best Offer",
     location: "Bronx, NY",
+    // No productId, so no link
   },
 ];
 
@@ -161,6 +168,26 @@ function ActiveOrders() {
       dateStr.replace(/(\w{3}) (\d{1,2}), (\d{4})/, "$3-$2 $1")
     );
     return orderDate.toDateString() === today.toDateString();
+  };
+
+  const ItemLink = ({
+    children,
+    productId,
+  }: {
+    children: React.ReactNode;
+    productId?: number;
+  }) => {
+    if (!productId) {
+      return <>{children}</>;
+    }
+    return (
+      <Link
+        to={`/product/${productId}`}
+        className="hover:underline focus-visible:underline"
+      >
+        {children}
+      </Link>
+    );
   };
 
   return (
@@ -310,12 +337,14 @@ function ActiveOrders() {
                         {order.id}
                       </td>
                       <td className="p-4">
-                        <div className="font-medium text-foreground">
-                          {order.item}
-                        </div>
-                        <div className="text-sm text-primary font-semibold">
-                          {order.price}
-                        </div>
+                        <ItemLink productId={order.productId}>
+                          <div className="font-medium text-foreground">
+                            {order.item}
+                          </div>
+                          <div className="text-sm text-primary font-semibold">
+                            {order.price}
+                          </div>
+                        </ItemLink>
                       </td>
                       <td className="p-4">
                         <div className="flex items-center gap-2">
@@ -384,12 +413,14 @@ function ActiveOrders() {
                         {getStatusInfo(order.status).label}
                       </Badge>
                     </div>
-                    <h3 className="font-medium text-foreground mb-1">
-                      {order.item}
-                    </h3>
-                    <p className="text-primary font-semibold mb-2">
-                      {order.price}
-                    </p>
+                    <ItemLink productId={order.productId}>
+                      <h3 className="font-medium text-foreground mb-1">
+                        {order.item}
+                      </h3>
+                      <p className="text-primary font-semibold mb-2">
+                        {order.price}
+                      </p>
+                    </ItemLink>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
                       <div className="flex items-center gap-1">
                         <User className="w-4 h-4" />

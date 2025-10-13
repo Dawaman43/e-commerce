@@ -20,6 +20,7 @@ import CategoriesPage from "./pages/Categories";
 import SettingsPage from "./pages/Settings";
 import InboxPage from "./pages/Inbox";
 import NotificationsPage from "./pages/Notifications";
+import ProductPage from "./pages/Product";
 
 const App = () => {
   return (
@@ -27,7 +28,6 @@ const App = () => {
       <Route path="/" element={<HomePage />} />
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/profile" element={<ProfilePage />} />
-      <Route path="/*" element={<NotFoundPage />} />
 
       {/* new routes */}
       <Route path="/about" element={<AboutUsPage />} />
@@ -47,6 +47,11 @@ const App = () => {
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/inbox" element={<InboxPage />} />
       <Route path="/notifications" element={<NotificationsPage />} />
+
+      {/* Dynamic product route */}
+      <Route path="/product/:id" element={<ProductPage />} />
+
+      <Route path="/*" element={<NotFoundPage />} />
     </Routes>
   );
 };
