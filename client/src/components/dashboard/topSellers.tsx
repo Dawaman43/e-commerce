@@ -1,7 +1,26 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { motion, useInView, easeOut } from "framer-motion";
 import { useRef } from "react";
-import { Star, Users, MapPin, MessageCircle } from "lucide-react"; // Lucide icons for ratings/stats
+import {
+  Star,
+  Users,
+  MapPin,
+  MessageCircle,
+  Search,
+  Filter,
+  Heart,
+  Crown,
+} from "lucide-react"; // Lucide icons for ratings/stats
 
 // Mock data - replace with API fetch (e.g., sorted by total sales)
 const mockSellers = [
@@ -14,6 +33,7 @@ const mockSellers = [
     sales: 89,
     location: "Brooklyn, NY",
     bio: "Electronics & gadgets specialist",
+    verified: true,
   },
   {
     id: 2,
@@ -24,6 +44,7 @@ const mockSellers = [
     sales: 72,
     location: "Manhattan, NY",
     bio: "Vintage clothing curator",
+    verified: false,
   },
   {
     id: 3,
@@ -34,6 +55,7 @@ const mockSellers = [
     sales: 110,
     location: "Queens, NY",
     bio: "Handmade crafts & art",
+    verified: true,
   },
   {
     id: 4,
@@ -44,6 +66,7 @@ const mockSellers = [
     sales: 145,
     location: "Harlem, NY",
     bio: "Bikes & outdoor gear",
+    verified: true,
   },
   {
     id: 5,
@@ -54,6 +77,7 @@ const mockSellers = [
     sales: 54,
     location: "Bronx, NY",
     bio: "Books & collectibles",
+    verified: false,
   },
   {
     id: 6,
@@ -64,6 +88,7 @@ const mockSellers = [
     sales: 67,
     location: "Staten Island, NY",
     bio: "Home decor & furniture",
+    verified: true,
   },
   {
     id: 7,
@@ -74,6 +99,7 @@ const mockSellers = [
     sales: 91,
     location: "Upper East Side, NY",
     bio: "Tech accessories pro",
+    verified: false,
   },
   {
     id: 8,
@@ -84,6 +110,7 @@ const mockSellers = [
     sales: 102,
     location: "Lower East Side, NY",
     bio: "Jewelry & accessories",
+    verified: true,
   },
 ];
 
@@ -116,6 +143,18 @@ const cardHoverVariants = {
   },
 };
 
+interface Seller {
+  id: number;
+  avatar: string;
+  name: string;
+  rating: number;
+  reviews: number;
+  sales: number;
+  location: string;
+  bio: string;
+  verified: boolean;
+}
+
 function TopSellers() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.1 });
@@ -124,6 +163,39 @@ function TopSellers() {
   const shouldReduceMotion =
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // State for filtering and searching
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterRating, setFilterRating] = useState("all");
+  const [favorites, setFavorites] = useState(new Set<number>());
+
+  // Filtered sellers
+  const filteredSellers: Seller[] = mockSellers
+    .filter(
+      (seller) =>
+        seller.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        seller.bio.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .filter(
+      (seller) =>
+        filterRating === "all" ||
+        (filterRating === "4.5+" && seller.rating >= 4.5) ||
+        (filterRating === "verified" && seller.verified)
+    )
+    .sort((a, b) => b.rating - a.rating); // Sort by rating descending
+
+  // Toggle favorite
+  const toggleFavorite = (id: number) => {
+    setFavorites((prev) => {
+      const newFavorites = new Set(prev);
+      if (newFavorites.has(id)) {
+        newFavorites.delete(id);
+      } else {
+        newFavorites.add(id);
+      }
+      return newFavorites;
+    });
+  };
 
   return (
     <section
@@ -146,14 +218,53 @@ function TopSellers() {
             },
           }}
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             Trusted Top Sellers
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             Connect with our most reliable locals—vetted by thousands of happy
-            trades.
+            trades. Search and filter to find your ideal match.
           </p>
         </motion.div>
+
+        {/* Filters and Search */}
+        <motion.div
+          className="flex flex-col sm:flex-row gap-4 mb-8 justify-center items-center"
+          initial={{ opacity: 0, y: 10 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Search sellers..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={filterRating} onValueChange={setFilterRating}>
+            <SelectTrigger className="w-48">
+              <Filter className="w-4 h-4 mr-2" />
+              <SelectValue placeholder="Filter by Rating" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sellers</SelectItem>
+              <SelectItem value="4.5+">4.5+ Stars</SelectItem>
+              <SelectItem value="verified">Verified Only</SelectItem>
+            </SelectContent>
+          </Select>
+        </motion.div>
+
+        {/* Results Info */}
+        <motion.p
+          className="text-center text-muted-foreground mb-6"
+          initial={{ opacity: 0 }}
+          animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+        >
+          Showing {filteredSellers.length} of {mockSellers.length} top sellers
+        </motion.p>
 
         {/* Grid */}
         <motion.div
@@ -162,7 +273,7 @@ function TopSellers() {
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
         >
-          {mockSellers.map((seller) => (
+          {filteredSellers.map((seller) => (
             <motion.article
               key={seller.id}
               className="group bg-card rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 border border-border"
@@ -179,9 +290,33 @@ function TopSellers() {
                   className="w-20 h-20 rounded-full mx-auto object-cover border-2 border-primary/20 group-hover:border-primary/40 transition-colors"
                   loading="lazy"
                 />
-                <span className="absolute -top-2 -right-2 px-2 py-1 bg-primary text-primary-foreground text-xs rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute -top-2 -right-2 flex items-center gap-1 px-2 py-1 bg-primary text-primary-foreground text-xs rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Crown className="w-3 h-3" />
                   Top Seller
-                </span>
+                </div>
+                {seller.verified && (
+                  <Badge
+                    variant="secondary"
+                    className="absolute top-2 left-2 text-xs"
+                  >
+                    Verified
+                  </Badge>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleFavorite(seller.id)}
+                  className="absolute top-2 right-2 p-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label={`Toggle favorite for ${seller.name}`}
+                >
+                  <Heart
+                    className={`w-4 h-4 transition-colors ${
+                      favorites.has(seller.id)
+                        ? "fill-primary text-primary"
+                        : "text-muted-foreground"
+                    }`}
+                  />
+                </Button>
               </div>
 
               {/* Content */}
@@ -231,27 +366,37 @@ function TopSellers() {
         </motion.div>
 
         {/* CTA Button */}
-        <motion.div
-          className="flex justify-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-        >
-          <Button
-            size="lg"
-            className="rounded-xl px-8 bg-secondary hover:bg-secondary/80 text-secondary-foreground"
-            asChild
+        {filteredSellers.length > 0 ? (
+          <motion.div
+            className="flex justify-center"
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
           >
-            <motion.a
-              href="/sellers"
-              whileHover={shouldReduceMotion ? {} : { scale: 1.05 }}
-              whileTap={shouldReduceMotion ? {} : { scale: 0.95 }}
-              transition={{ duration: 0.2 }}
+            <Button
+              size="lg"
+              className="rounded-xl px-8 bg-secondary hover:bg-secondary/80 text-secondary-foreground"
+              asChild
             >
-              Explore All Sellers
-            </motion.a>
-          </Button>
-        </motion.div>
+              <motion.a
+                href="/sellers"
+                whileHover={shouldReduceMotion ? {} : { scale: 1.05 }}
+                whileTap={shouldReduceMotion ? {} : { scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+              >
+                Explore All Sellers ({mockSellers.length})
+              </motion.a>
+            </Button>
+          </motion.div>
+        ) : (
+          <motion.p
+            className="text-center text-muted-foreground text-lg"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            No sellers found. Try adjusting your search or filters.
+          </motion.p>
+        )}
       </div>
     </section>
   );
