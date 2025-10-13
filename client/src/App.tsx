@@ -21,7 +21,8 @@ import SettingsPage from "./pages/Settings";
 import InboxPage from "./pages/Inbox";
 import NotificationsPage from "./pages/Notifications";
 import ProductPage from "./pages/Product";
-import SellerPage from "./pages/Seller"; // Add this import
+import SellerPage from "./pages/Seller";
+import OrderHistory from "./pages/OrderHistory"; // Add this import
 
 const App = () => {
   return (
@@ -54,6 +55,9 @@ const App = () => {
 
       {/* Dynamic seller route */}
       <Route path="/seller/:id" element={<SellerPage />} />
+
+      {/* Dashboard orders sub-routes */}
+      <Route path="/dashboard/orders/history" element={<OrderHistory />} />
 
       <Route path="/*" element={<NotFoundPage />} />
     </Routes>
