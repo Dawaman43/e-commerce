@@ -9,7 +9,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "../ui/dropdown-menu";
-import { Pencil, Settings, User as UserIcon } from "lucide-react";
+import {
+  Inbox,
+  MessageSquareIcon,
+  Pencil,
+  Settings,
+  User as UserIcon,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "../ui/button";
 import { signOut } from "@/utils/auth";
@@ -76,6 +82,17 @@ function UserAvatar() {
         <DropdownMenuItem asChild>
           <Link to="/profile" className="flex items-center gap-x-2">
             <Pencil className="w-5 h-5" /> Edit Profile
+          </Link>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem asChild>
+          <Link to="/inbox" className="flex items-center gap-x-2">
+            <Inbox className="w-5 h-5" /> Inbox
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/notification" className="flex items-center gap-x-2">
+            <MessageSquareIcon className="w-5 h-5" /> Notification
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
