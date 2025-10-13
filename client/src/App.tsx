@@ -17,6 +17,7 @@ import ListingPage from "./pages/Listing";
 import SellersPage from "./pages/Sellers";
 import OrdersPage from "./pages/Orders";
 import CategoriesPage from "./pages/Categories";
+import SettingsPage from "./pages/Settings";
 
 const App = () => {
   return (
@@ -41,6 +42,7 @@ const App = () => {
       <Route path="/sellers" element={<SellersPage />} />
       <Route path="/orders" element={<OrdersPage />} />
       <Route path="/categories" element={<CategoriesPage />} />
+      <Route path="/settings" element={<SettingsPage />} />
     </Routes>
   );
 };
