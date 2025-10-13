@@ -1,17 +1,16 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import {
-  FileText,
-  User,
-  AlertTriangle,
-  Scale,
-  CreditCard,
   Shield,
-  Gavel,
+  User,
+  Lock,
+  Share2,
+  AlertTriangle,
   Mail,
   Phone,
   MapPin,
   ArrowRight,
+  Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -63,7 +62,7 @@ const hoverScale = {
   tap: { scale: 0.95 },
 };
 
-function TermPage() {
+function PrivacyPage() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.1 });
 
@@ -84,12 +83,12 @@ function TermPage() {
             variants={fadeInUp}
           >
             <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-foreground via-primary to-secondary bg-clip-text text-transparent mb-6">
-              Terms of Service
+              Privacy Policy
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed mb-8">
-              Welcome to Gebeya Go. These Terms of Service govern your use of
-              our platform. By accessing or using our services, you agree to be
-              bound by these terms.
+              At Gebeya Go, your privacy is our priority. We are committed to
+              protecting your personal information and ensuring transparency in
+              how we handle your data.
             </p>
             <p className="text-lg text-muted-foreground mb-8">
               Last updated: October 13, 2025
@@ -101,11 +100,11 @@ function TermPage() {
                 asChild
               >
                 <motion.a
-                  href="#terms"
+                  href="#policy"
                   whileHover={shouldReduceMotion ? {} : hoverScale}
                   whileTap={shouldReduceMotion ? {} : { scale: 0.95 }}
                 >
-                  Read Terms
+                  Read Policy
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </motion.a>
               </Button>
@@ -122,8 +121,8 @@ function TermPage() {
         </div>
       </section>
 
-      {/* Terms Sections */}
-      <section id="terms" className="py-16 md:py-24 bg-background/50">
+      {/* Policy Sections */}
+      <section id="policy" className="py-16 md:py-24 bg-background/50">
         <div className="container mx-auto px-4 md:px-8 lg:px-16">
           <motion.div
             ref={ref}
@@ -135,20 +134,21 @@ function TermPage() {
             <motion.div variants={itemVariants}>
               <Card>
                 <CardHeader className="flex flex-row items-center gap-3 pb-4">
-                  <FileText className="w-6 h-6 text-primary" />
+                  <Shield className="w-6 h-6 text-primary" />
                   <CardTitle className="text-xl">1. Introduction</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm leading-relaxed text-muted-foreground mb-4">
-                    These Terms of Service ("Terms") are a legal agreement
-                    between you and Gebeya Go ("we," "our," or "us"). They
-                    govern your access to and use of our website, mobile app,
-                    and services (collectively, the "Services").
+                    Gebeya Go ("we," "our," or "us") respects your privacy and
+                    is committed to protecting your personal data. This Privacy
+                    Policy explains how we collect, use, disclose, and safeguard
+                    your information when you visit our website or use our
+                    services.
                   </p>
                   <p className="text-sm leading-relaxed text-muted-foreground">
-                    By creating an account or using the Services, you confirm
-                    that you are at least 18 years old and agree to these Terms.
-                    If you do not agree, please do not use our Services.
+                    By using our platform, you consent to the practices
+                    described in this policy. If you do not agree, please do not
+                    use our services.
                   </p>
                 </CardContent>
               </Card>
@@ -158,26 +158,97 @@ function TermPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center gap-3 pb-4">
                   <User className="w-6 h-6 text-primary" />
-                  <CardTitle className="text-xl">2. User Accounts</CardTitle>
+                  <CardTitle className="text-xl">
+                    2. Information We Collect
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm leading-relaxed text-muted-foreground mb-4">
-                    To use certain features, you must create an account with
-                    accurate information. You are responsible for maintaining
-                    the confidentiality of your account and password.
+                    We collect information to provide better services to all
+                    users. This includes:
                   </p>
                   <ul className="space-y-2 text-sm text-muted-foreground mb-4">
                     <li>
-                      • You must provide truthful and up-to-date information.
+                      • Personal Information: Name, email, phone number, and
+                      location (when you create an account or list items).
                     </li>
-                    <li>• Notify us immediately of any unauthorized use.</li>
                     <li>
-                      • We reserve the right to suspend or terminate accounts
-                      for violations.
+                      • Usage Data: Device information, browsing actions, and
+                      patterns.
+                    </li>
+                    <li>
+                      • Transaction Data: Details of purchases, sales, or
+                      trades.
+                    </li>
+                    <li>
+                      • Cookies: To enhance user experience and analyze traffic.
                     </li>
                   </ul>
                   <p className="text-sm leading-relaxed text-muted-foreground">
-                    You may only have one active account unless approved by us.
+                    We only collect what is necessary and with your consent
+                    where required.
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <Card>
+                <CardHeader className="flex flex-row items-center gap-3 pb-4">
+                  <Lock className="w-6 h-6 text-primary" />
+                  <CardTitle className="text-xl">
+                    3. How We Use Your Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm leading-relaxed text-muted-foreground mb-4">
+                    We use your information to:
+                  </p>
+                  <ul className="space-y-2 text-sm text-muted-foreground mb-4">
+                    <li>
+                      • Provide and maintain our services (e.g., matching buyers
+                      and sellers).
+                    </li>
+                    <li>• Improve our platform and user experience.</li>
+                    <li>
+                      • Communicate with you about updates, promotions, or
+                      support.
+                    </li>
+                    <li>• Comply with legal obligations and prevent fraud.</li>
+                  </ul>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    We do not sell your personal data to third parties.
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <Card>
+                <CardHeader className="flex flex-row items-center gap-3 pb-4">
+                  <Share2 className="w-6 h-6 text-primary" />
+                  <CardTitle className="text-xl">
+                    4. Sharing Your Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm leading-relaxed text-muted-foreground mb-4">
+                    We may share your information with:
+                  </p>
+                  <ul className="space-y-2 text-sm text-muted-foreground mb-4">
+                    <li>
+                      • Service providers (e.g., payment processors, analytics
+                      tools) under strict confidentiality.
+                    </li>
+                    <li>
+                      • Business partners for joint promotions (with your
+                      consent).
+                    </li>
+                    <li>• Legal authorities if required by law.</li>
+                  </ul>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    We ensure all third parties protect your data and use it
+                    only for specified purposes.
                   </p>
                 </CardContent>
               </Card>
@@ -187,85 +258,18 @@ function TermPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center gap-3 pb-4">
                   <AlertTriangle className="w-6 h-6 text-primary" />
-                  <CardTitle className="text-xl">3. User Conduct</CardTitle>
+                  <CardTitle className="text-xl">5. Data Security</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm leading-relaxed text-muted-foreground mb-4">
-                    You agree to use the Services only for lawful purposes and
-                    in compliance with these Terms.
+                    We implement robust security measures, including encryption,
+                    firewalls, and access controls, to protect your information.
+                    However, no system is completely secure, and we cannot
+                    guarantee absolute security.
                   </p>
-                  <ul className="space-y-2 text-sm text-muted-foreground mb-4">
-                    <li>
-                      • Do not post illegal, harmful, or fraudulent content.
-                    </li>
-                    <li>• Respect intellectual property rights of others.</li>
-                    <li>• Do not harass, spam, or impersonate others.</li>
-                    <li>• Comply with all applicable laws and regulations.</li>
-                  </ul>
                   <p className="text-sm leading-relaxed text-muted-foreground">
-                    We may remove content or suspend accounts for violations
-                    without notice.
-                  </p>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            <motion.div variants={itemVariants}>
-              <Card>
-                <CardHeader className="flex flex-row items-center gap-3 pb-4">
-                  <Scale className="w-6 h-6 text-primary" />
-                  <CardTitle className="text-xl">
-                    4. Listings and Transactions
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm leading-relaxed text-muted-foreground mb-4">
-                    You are responsible for the accuracy and legality of your
-                    listings. All transactions are between users; we are not a
-                    party to them.
-                  </p>
-                  <ul className="space-y-2 text-sm text-muted-foreground mb-4">
-                    <li>• Listings must accurately describe items.</li>
-                    <li>
-                      • You handle shipping, payments, and disputes directly.
-                    </li>
-                    <li>
-                      • We provide no warranties on items or transactions.
-                    </li>
-                    <li>
-                      • Prohibited items include weapons, drugs, and counterfeit
-                      goods.
-                    </li>
-                  </ul>
-                  <p className="text-sm leading-relaxed text-muted-foreground">
-                    Use our dispute resolution tools for issues.
-                  </p>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            <motion.div variants={itemVariants}>
-              <Card>
-                <CardHeader className="flex flex-row items-center gap-3 pb-4">
-                  <CreditCard className="w-6 h-6 text-primary" />
-                  <CardTitle className="text-xl">
-                    5. Fees and Payments
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm leading-relaxed text-muted-foreground mb-4">
-                    We charge fees for certain transactions (e.g., 5% seller
-                    fee). Fees are non-refundable unless specified.
-                  </p>
-                  <ul className="space-y-2 text-sm text-muted-foreground mb-4">
-                    <li>• Fees are deducted from payouts.</li>
-                    <li>
-                      • We use third-party processors; you agree to their terms.
-                    </li>
-                    <li>• No fees for browsing or basic use.</li>
-                  </ul>
-                  <p className="text-sm leading-relaxed text-muted-foreground">
-                    We may update fees with notice.
+                    In the event of a data breach, we will notify affected users
+                    as required by law.
                   </p>
                 </CardContent>
               </Card>
@@ -276,30 +280,26 @@ function TermPage() {
                 <CardHeader className="flex flex-row items-center gap-3 pb-4">
                   <Shield className="w-6 h-6 text-primary" />
                   <CardTitle className="text-xl">
-                    6. Intellectual Property
+                    6. Your Rights and Choices
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm leading-relaxed text-muted-foreground mb-4">
-                    All content on the Services, including text, graphics, and
-                    software, is owned by us or our licensors.
+                    You have the right to:
                   </p>
                   <ul className="space-y-2 text-sm text-muted-foreground mb-4">
                     <li>
-                      • You grant us a license to use your listings for the
-                      Services.
+                      • Access, update, or delete your personal information.
                     </li>
+                    <li>• Opt-out of marketing communications.</li>
+                    <li>• Withdraw consent at any time.</li>
                     <li>
-                      • Do not copy, modify, or distribute our content without
-                      permission.
-                    </li>
-                    <li>
-                      • User-generated content remains yours, but you grant us
-                      broad rights.
+                      • File a complaint with data protection authorities.
                     </li>
                   </ul>
                   <p className="text-sm leading-relaxed text-muted-foreground">
-                    Report infringements to support@gebayago.com.
+                    To exercise these rights, contact us at
+                    privacy@gebayago.com.
                   </p>
                 </CardContent>
               </Card>
@@ -308,75 +308,20 @@ function TermPage() {
             <motion.div variants={itemVariants}>
               <Card>
                 <CardHeader className="flex flex-row items-center gap-3 pb-4">
-                  <Gavel className="w-6 h-6 text-primary" />
-                  <CardTitle className="text-xl">7. Termination</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm leading-relaxed text-muted-foreground mb-4">
-                    We may terminate or suspend your access at any time for
-                    violations or at our discretion.
-                  </p>
-                  <ul className="space-y-2 text-sm text-muted-foreground mb-4">
-                    <li>
-                      • Upon termination, your right to use the Services ends.
-                    </li>
-                    <li>• Outstanding payments may still be due.</li>
-                    <li>
-                      • Sections that survive termination include IP,
-                      limitations, and governing law.
-                    </li>
-                  </ul>
-                  <p className="text-sm leading-relaxed text-muted-foreground">
-                    You may close your account anytime via settings.
-                  </p>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            <motion.div variants={itemVariants}>
-              <Card>
-                <CardHeader className="flex flex-row items-center gap-3 pb-4">
-                  <AlertTriangle className="w-6 h-6 text-primary" />
+                  <Calendar className="w-6 h-6 text-primary" />
                   <CardTitle className="text-xl">
-                    8. Disclaimers and Limitations
+                    7. Changes to This Policy
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm leading-relaxed text-muted-foreground mb-4">
-                    The Services are provided "as is" without warranties. We
-                    disclaim all warranties, express or implied.
-                  </p>
-                  <ul className="space-y-2 text-sm text-muted-foreground mb-4">
-                    <li>
-                      • We are not liable for user content or transactions.
-                    </li>
-                    <li>
-                      • Liability is limited to the fees paid in the last 12
-                      months.
-                    </li>
-                    <li>• No consequential damages.</li>
-                  </ul>
-                  <p className="text-sm leading-relaxed text-muted-foreground">
-                    Indemnify us against claims arising from your use.
-                  </p>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            <motion.div variants={itemVariants}>
-              <Card>
-                <CardHeader className="flex flex-row items-center gap-3 pb-4">
-                  <Gavel className="w-6 h-6 text-primary" />
-                  <CardTitle className="text-xl">9. Governing Law</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm leading-relaxed text-muted-foreground mb-4">
-                    These Terms are governed by the laws of the State of New
-                    York, without regard to conflict of laws principles.
+                    We may update this Privacy Policy from time to time. We will
+                    notify you of material changes by posting the new policy on
+                    our site and updating the "Last updated" date.
                   </p>
                   <p className="text-sm leading-relaxed text-muted-foreground">
-                    Any disputes shall be resolved exclusively in the state or
-                    federal courts in New York County, New York.
+                    Continued use of our services after changes constitutes
+                    acceptance of the revised policy.
                   </p>
                 </CardContent>
               </Card>
@@ -386,16 +331,17 @@ function TermPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center gap-3 pb-4">
                   <Mail className="w-6 h-6 text-primary" />
-                  <CardTitle className="text-xl">10. Contact Us</CardTitle>
+                  <CardTitle className="text-xl">8. Contact Us</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm leading-relaxed text-muted-foreground mb-4">
-                    For questions about these Terms, please contact us:
+                    If you have questions about this Privacy Policy, please
+                    contact our Data Protection Officer:
                   </p>
                   <div className="space-y-2 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <Mail className="w-4 h-4" />
-                      <span>support@gebayago.com</span>
+                      <span>privacy@gebayago.com</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Phone className="w-4 h-4" />
@@ -423,11 +369,11 @@ function TermPage() {
             className="max-w-2xl mx-auto"
           >
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Questions About Our Terms?
+              Questions About Privacy?
             </h2>
             <p className="text-muted-foreground text-lg mb-8">
-              We're here to help clarify any concerns you may have regarding our
-              Terms of Service.
+              We're here to help. Reach out if you need clarification on any
+              aspect of our privacy practices.
             </p>
             <Button
               size="lg"
@@ -435,11 +381,11 @@ function TermPage() {
               asChild
             >
               <motion.a
-                href="mailto:support@gebayago.com?subject=Terms%20Question"
+                href="mailto:privacy@gebayago.com?subject=Privacy%20Question"
                 whileHover={shouldReduceMotion ? {} : hoverScale}
                 whileTap={shouldReduceMotion ? {} : { scale: 0.95 }}
               >
-                Contact Support
+                Contact Privacy Team
                 <ArrowRight className="w-5 h-5 ml-2" />
               </motion.a>
             </Button>
@@ -450,4 +396,4 @@ function TermPage() {
   );
 }
 
-export default TermPage;
+export default PrivacyPage;
