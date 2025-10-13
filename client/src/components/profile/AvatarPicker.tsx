@@ -25,19 +25,13 @@ import {
   Star,
   Stars,
 } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
 
-const MotionButton = motion(Button);
-const MotionCard = motion(Card);
+const MotionButton = motion.create(Button);
+const MotionCard = motion.create(Card);
 
 const AVATAR_STYLES = [
   { value: "adventurer", label: "Adventurer" },
@@ -122,7 +116,7 @@ function AvatarGrid({
   onToggleFavorite,
   screenSize,
   isFavoritesTab = false,
-  style,
+
   isGenerating = false,
   onRandomize,
   onLoadMore,
@@ -131,7 +125,6 @@ function AvatarGrid({
 }: AvatarGridProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const cols = screenSize === "mobile" ? 2 : screenSize === "tablet" ? 3 : 4;
   const gridClass = `grid ${
     screenSize === "mobile"
       ? "grid-cols-2"
@@ -447,30 +440,13 @@ export default function AvatarPicker({
     "desktop"
   );
   const [currentOffset, setCurrentOffset] = useState(0);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const gridRef = useRef<HTMLDivElement>(null);
 
   const seed = useDebounce(rawSeed.trim(), 300);
-  const isMobile = screenSize === "mobile";
 
-  const batchSize = 12;
   const initialCount =
     screenSize === "mobile" ? 12 : screenSize === "tablet" ? 24 : 36;
   const maxAvatars = 100;
-
-  const loadMore = useCallback(() => {
-    if (isLoadingMore || !hasMore) return;
-    setIsLoadingMore(true);
-    setCurrentOffset((prev) => {
-      const newOffset = prev + batchSize;
-      if (newOffset + initialCount >= maxAvatars) {
-        setHasMore(false);
-      }
-      return newOffset;
-    });
-    setIsLoadingMore(false);
-  }, [isLoadingMore, hasMore, initialCount]);
 
   useEffect(() => {
     setCurrentOffset(0);
@@ -581,7 +557,7 @@ export default function AvatarPicker({
             onValueChange={(v) => setActiveTab(v as "grid" | "favorites")}
             className="flex flex-col h-full"
           >
-            <DialogHeader className="border-b p-2 sm:p-3 md:p-4 sm:p-6 flex-shrink-0 bg-gradient-to-r from-primary/5 to-secondary/5">
+            <DialogHeader className="border-b p-2 sm:p-3 md:p-4 flex-shrink-0 bg-gradient-to-r from-primary/5 to-secondary/5">
               <DialogTitle className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-3 md:gap-4">
                 <div className="flex-1">
                   <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2">
@@ -640,7 +616,7 @@ export default function AvatarPicker({
             </DialogHeader>
 
             {/* Seed Input Section */}
-            <div className="p-2 sm:p-3 md:p-4 sm:p-6 border-b bg-muted/30 flex-shrink-0">
+            <div className="p-2 sm:p-3 md:p-4  border-b bg-muted/30 flex-shrink-0">
               <SeedInput
                 seed={rawSeed}
                 onSeedChange={handleSeedChange}

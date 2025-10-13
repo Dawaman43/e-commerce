@@ -7,6 +7,7 @@ import { BrowserRouter } from "react-router-dom";
 import Header from "./components/header/header.tsx";
 import { AuthProvider } from "./components/auth-provider.tsx";
 import { Toaster } from "sonner";
+import Footer from "./components/layout/footer.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -16,6 +17,7 @@ createRoot(document.getElementById("root")!).render(
           <Toaster richColors position="top-right" />
           <Header />
           <App />
+          <Footer />
         </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>

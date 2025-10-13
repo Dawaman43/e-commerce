@@ -12,6 +12,7 @@ import {
 import { Pencil, Settings, User as UserIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "../ui/button";
+import { signOut } from "@/utils/auth";
 
 const getInitials = (name: string) =>
   name
@@ -37,7 +38,7 @@ function UserAvatar() {
   }, []);
 
   const handleLogout = async () => {
-    // your logout logic
+    await signOut();
     window.location.href = "/";
   };
 

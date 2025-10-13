@@ -13,4 +13,5 @@ export interface User {
   totalSales?: number;
   createdAt?: string;
   updatedAt?: string;
+  avatarUrl?: string;
 }

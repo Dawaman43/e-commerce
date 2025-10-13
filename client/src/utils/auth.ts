@@ -5,7 +5,7 @@ export const signInWithGoogle = async () => {
   try {
     await authClient.signIn.social({
       provider: "google",
-      callbackURL: `${FRONTEND_API_URL}/dashboard`,
+      callbackURL: `${FRONTEND_API_URL}`,
       errorCallbackURL: `${FRONTEND_API_URL}/error`,
       disableRedirect: false,
     });
