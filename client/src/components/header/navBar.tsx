@@ -8,7 +8,7 @@ import { Link } from "react-router-dom";
 
 const navBarLinks = [
   { id: 1, name: "Categories", link: "/categories" },
-  { id: 2, name: "Orders", link: "/orders" },
+  { id: 2, name: "Orders", link: "/dashboard/orders" },
   { id: 3, name: "Contact Us", link: "/contact" },
 ];
 
