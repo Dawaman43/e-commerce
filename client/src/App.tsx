@@ -19,6 +19,7 @@ import OrdersPage from "./pages/Orders";
 import CategoriesPage from "./pages/Categories";
 import SettingsPage from "./pages/Settings";
 import InboxPage from "./pages/Inbox";
+import NotificationsPage from "./pages/Notifications";
 
 const App = () => {
   return (
@@ -45,6 +46,7 @@ const App = () => {
       <Route path="/categories" element={<CategoriesPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/inbox" element={<InboxPage />} />
+      <Route path="/notifications" element={<NotificationsPage />} />
     </Routes>
   );
 };

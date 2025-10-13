@@ -91,7 +91,7 @@ function UserAvatar() {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link to="/notification" className="flex items-center gap-x-2">
+          <Link to="/notifications" className="flex items-center gap-x-2">
             <MessageSquareIcon className="w-5 h-5" /> Notification
           </Link>
         </DropdownMenuItem>
