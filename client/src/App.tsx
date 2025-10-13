@@ -16,6 +16,7 @@ import SellPage from "./pages/Sell";
 import ListingPage from "./pages/Listing";
 import SellersPage from "./pages/Sellers";
 import OrdersPage from "./pages/Orders";
+import CategoriesPage from "./pages/Categories";
 
 const App = () => {
   return (
@@ -39,6 +40,7 @@ const App = () => {
       <Route path="/listings" element={<ListingPage />} />
       <Route path="/sellers" element={<SellersPage />} />
       <Route path="/orders" element={<OrdersPage />} />
+      <Route path="/categories" element={<CategoriesPage />} />
     </Routes>
   );
 };
