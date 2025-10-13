@@ -1,8 +1,28 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { motion, useInView, easeOut } from "framer-motion";
 import { useRef } from "react";
-import { Package, Truck, User, MapPin, MessageCircle, Eye } from "lucide-react";
+import {
+  Package,
+  Truck,
+  User,
+  MapPin,
+  MessageCircle,
+  Eye,
+  Search,
+  Filter,
+  RefreshCw,
+  Calendar,
+} from "lucide-react";
 
 // Types for safety
 type OrderStatus = "pending" | "in-progress" | "awaiting-pickup";
@@ -112,12 +132,41 @@ function ActiveOrders() {
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  // State for filtering and searching
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+
   const hasOrders = mockOrders.length > 0;
+
+  // Filtered orders
+  const filteredOrders: Order[] = mockOrders
+    .filter(
+      (order) =>
+        order.item.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.seller.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .filter((order) => filterStatus === "all" || order.status === filterStatus)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Sort by date descending
+
+  // Mock refresh function
+  const handleRefresh = () => {
+    // Simulate API refresh
+    console.log("Refreshing orders...");
+  };
+
+  // Check if order is today
+  const isToday = (dateStr: string) => {
+    const today = new Date("2025-10-13"); // Current date
+    const orderDate = new Date(
+      dateStr.replace(/(\w{3}) (\d{1,2}), (\d{4})/, "$3-$2 $1")
+    );
+    return orderDate.toDateString() === today.toDateString();
+  };
 
   return (
     <section
       ref={ref}
-      className="relative py-8 md:py-12 bg-background"
+      className="relative py-8 md:py-12 bg-gradient-to-br from-background to-muted/20"
       aria-label="Your active orders"
     >
       <div className="container mx-auto px-4 md:px-8 lg:px-16">
@@ -136,31 +185,84 @@ function ActiveOrders() {
           }}
         >
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-1">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-1 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
               Active Orders
             </h2>
             <p className="text-muted-foreground text-sm">
               Track your current buys, sells, and trades.
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="hidden md:flex items-center gap-2"
-            asChild
-          >
-            <motion.a
-              href="/dashboard/orders"
-              whileHover={shouldReduceMotion ? {} : { scale: 1.05 }}
-              transition={{ duration: 0.2 }}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRefresh}
+              className="h-8 w-8 p-0"
+              aria-label="Refresh orders"
             >
-              <Eye className="w-4 h-4" />
-              View All Orders
-            </motion.a>
-          </Button>
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="hidden md:flex items-center gap-2"
+              asChild
+            >
+              <motion.a
+                href="/dashboard/orders"
+                whileHover={shouldReduceMotion ? {} : { scale: 1.05 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Eye className="w-4 h-4" />
+                View All Orders
+              </motion.a>
+            </Button>
+          </div>
         </motion.div>
 
-        {hasOrders ? (
+        {/* Filters and Search */}
+        <motion.div
+          className="flex flex-col sm:flex-row gap-4 mb-6 justify-between items-center"
+          initial={{ opacity: 0, y: 10 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+        >
+          <div className="relative flex-1 sm:w-64">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Search by item or seller..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-48 sm:w-40">
+              <Filter className="w-4 h-4 mr-2" />
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="in-progress">In Progress</SelectItem>
+              <SelectItem value="awaiting-pickup">Awaiting Pickup</SelectItem>
+            </SelectContent>
+          </Select>
+        </motion.div>
+
+        {/* Results Info */}
+        {hasOrders && (
+          <motion.p
+            className="text-center text-muted-foreground mb-6"
+            initial={{ opacity: 0 }}
+            animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            Showing {filteredOrders.length} of {mockOrders.length} active orders
+          </motion.p>
+        )}
+
+        {filteredOrders.length > 0 ? (
           <div className="overflow-x-auto">
             <motion.div
               className="w-full"
@@ -193,7 +295,7 @@ function ActiveOrders() {
                   </tr>
                 </thead>
                 <tbody>
-                  {mockOrders.map((order) => (
+                  {filteredOrders.map((order) => (
                     <motion.tr
                       key={order.id}
                       className="border-b border-border/20 hover:bg-muted/50 transition-colors"
@@ -231,8 +333,14 @@ function ActiveOrders() {
                           {getStatusInfo(order.status).label}
                         </Badge>
                       </td>
-                      <td className="p-4 text-sm text-muted-foreground">
+                      <td className="p-4 text-sm text-muted-foreground flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
                         {order.date}
+                        {isToday(order.date) && (
+                          <Badge variant="secondary" className="ml-2 text-xs">
+                            Today
+                          </Badge>
+                        )}
                       </td>
                       <td className="p-4">
                         <div className="flex gap-2">
@@ -261,7 +369,7 @@ function ActiveOrders() {
 
               {/* Mobile Cards */}
               <div className="md:hidden space-y-4">
-                {mockOrders.map((order) => (
+                {filteredOrders.map((order) => (
                   <motion.div
                     key={order.id}
                     className="bg-card rounded-lg p-4 shadow-sm border border-border hover:shadow-md transition-shadow"
@@ -291,7 +399,15 @@ function ActiveOrders() {
                         <MapPin className="w-4 h-4" />
                         <span>{order.location}</span>
                       </div>
-                      <span>{order.date}</span>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        <span>{order.date}</span>
+                        {isToday(order.date) && (
+                          <Badge variant="secondary" className="ml-1 text-xs">
+                            Today
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     <div className="flex gap-2">
                       <Button
