@@ -21,6 +21,7 @@ import SettingsPage from "./pages/Settings";
 import InboxPage from "./pages/Inbox";
 import NotificationsPage from "./pages/Notifications";
 import ProductPage from "./pages/Product";
+import SellerPage from "./pages/Seller"; // Add this import
 
 const App = () => {
   return (
@@ -50,6 +51,9 @@ const App = () => {
 
       {/* Dynamic product route */}
       <Route path="/product/:id" element={<ProductPage />} />
+
+      {/* Dynamic seller route */}
+      <Route path="/seller/:id" element={<SellerPage />} />
 
       <Route path="/*" element={<NotFoundPage />} />
     </Routes>
