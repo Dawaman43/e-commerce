@@ -15,6 +15,7 @@ import TradePage from "./pages/Trade";
 import SellPage from "./pages/Sell";
 import ListingPage from "./pages/Listing";
 import SellersPage from "./pages/Sellers";
+import OrdersPage from "./pages/Orders";
 
 const App = () => {
   return (
@@ -37,6 +38,7 @@ const App = () => {
       <Route path="/sell" element={<SellPage />} />
       <Route path="/listings" element={<ListingPage />} />
       <Route path="/sellers" element={<SellersPage />} />
+      <Route path="/orders" element={<OrdersPage />} />
     </Routes>
   );
 };
