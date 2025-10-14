@@ -1,4 +1,6 @@
 import { auth } from "../libs/auth.js";
+import jwt from "jsonwebtoken";
+import { User } from "../models/user.model.js";
 
 export const requireAuth = async (req, res, next) => {
   try {
@@ -7,14 +9,34 @@ export const requireAuth = async (req, res, next) => {
       cookies: req.cookies,
     });
 
-    if (!session || !session.user) {
+    if (session && session.user) {
+      req.user = session.user;
+      return next();
+    }
+
+    const authHeader = req.headers.authorization || "";
+    const token = authHeader.startsWith("Bearer ")
+      ? authHeader.split(" ")[1]
+      : null;
+
+    if (!token) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    req.user = session.user;
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    } catch (err) {
+      return res.status(401).json({ error: "Invalid or expired token" });
+    }
+
+    const user = await User.findById(decoded.id).select("-passwordHash");
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    req.user = user;
     next();
-  } catch (error) {
-    console.error("Auth middleware error: ", error);
+  } catch (err) {
+    console.error("Auth middleware error:", err);
     return res.status(500).json({ error: "Authentication failed" });
   }
 };

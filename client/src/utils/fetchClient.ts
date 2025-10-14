@@ -1,11 +1,13 @@
 export const fetchClient = async (url: string, options: RequestInit = {}) => {
+  const token = localStorage.getItem("token");
+
   const res = await fetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
       ...(options.headers || {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    credentials: "include",
   });
 
   if (!res.ok) {

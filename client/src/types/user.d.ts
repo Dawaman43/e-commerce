@@ -3,15 +3,19 @@ export interface User {
   authId: string;
   name: string;
   email: string;
-  image?: string;
+  role?: "user" | "moderator" | "admin";
+  isVerified?: boolean;
+
+  avatarUrl?: string;
   phone?: string;
   location?: string;
   bio?: string;
+
   walletBalance?: number;
   rating?: number;
   totalPurchases?: number;
   totalSales?: number;
-  createdAt?: string;
-  updatedAt?: string;
-  avatarUrl?: string;
+
+  createdAt?: Date;
+  updatedAt?: Date;
 }

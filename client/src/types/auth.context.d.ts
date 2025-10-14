@@ -4,6 +4,6 @@ export interface AuthContextType {
   user: AuthSession | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
-  signOutUser: () => Promise<void>;
+  logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
 }

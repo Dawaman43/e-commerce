@@ -4,14 +4,26 @@ import { fetchClient } from "@/utils/fetchClient";
 
 const BASE_URL = `${BACKEND_API_URL}/api/user`;
 
-// 🧩 Always include credentials to preserve the BetterAuth session
+// Default options with BetterAuth session
 const defaultOptions: RequestInit = {
   credentials: "include",
   headers: { "Content-Type": "application/json" },
 };
 
 export const getCurrentUser = async (): Promise<{ user: User }> => {
-  return await fetchClient(`${BASE_URL}/me`, defaultOptions);
+  try {
+    return await fetchClient(`${BASE_URL}/me`, { credentials: "include" });
+  } catch (err) {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("User is not authenticated");
+
+    return await fetchClient(`${BASE_URL}/me`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  }
 };
 
 export const updateUserProfile = async (

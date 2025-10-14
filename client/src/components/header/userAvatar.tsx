@@ -1,6 +1,4 @@
-import { useEffect, useState } from "react";
-import { getCurrentUser } from "@/api/user";
-import type { User } from "@/types/user";
+import { useAuth } from "@/components/auth-provider";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -11,6 +9,7 @@ import {
 } from "../ui/dropdown-menu";
 import {
   Inbox,
+  LogOut,
   MessageSquareIcon,
   Pencil,
   Settings,
@@ -18,94 +17,103 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "../ui/button";
-import { signOut } from "@/utils/auth";
+import { Skeleton } from "../ui/skeleton"; // Assuming shadcn/ui Skeleton for loading
+
+interface UserAvatarProps {
+  size?: "sm" | "md";
+}
 
 const getInitials = (name: string) =>
   name
     .split(" ")
     .map((n) => n[0])
     .join("")
-    .toUpperCase();
+    .toUpperCase()
+    .slice(0, 2); // Limit to 2 initials for better fit
 
-function UserAvatar() {
-  const [user, setUser] = useState<User | null>(null);
+function UserAvatar({ size = "md" }: UserAvatarProps) {
+  const { user, loading, logout } = useAuth(); // Assuming useAuth provides isLoading for auth state
 
-  // Fetch user from backend
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await getCurrentUser();
-        setUser(res.user);
-      } catch (err) {
-        console.error("[UserAvatar] Failed to fetch user:", err);
-      }
-    };
-    fetchUser();
-  }, []);
+  const avatarSize = size === "sm" ? "w-8 h-8 text-sm" : "w-10 h-10 text-lg";
+  const iconSize = size === "sm" ? "w-4 h-4" : "w-5 h-5";
 
-  const handleLogout = async () => {
-    await signOut();
-    window.location.href = "/";
-  };
+  if (loading) {
+    return <Skeleton className={`${avatarSize} rounded-full`} />;
+  }
 
-  if (!user)
+  if (!user) {
     return (
-      <Button asChild>
+      <Button variant="outline" size={"sm"} asChild>
         <Link to="/auth">Login</Link>
       </Button>
     );
+  }
+
+  const handleLogout = async () => {
+    await logout();
+    window.location.href = "/";
+  };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        {user.image ? (
+        {user.avatarUrl ? (
           <img
-            src={user.image}
-            alt={user.name}
-            className="w-10 h-10 rounded-full object-cover cursor-pointer"
+            src={user.avatarUrl}
+            alt={`${user.name}'s avatar`}
+            className={`${avatarSize} rounded-full object-cover cursor-pointer border border-gray-200 dark:border-gray-700`}
             referrerPolicy="no-referrer"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = "none"; // Hide broken image
+            }}
           />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-gray-700 text-white flex items-center justify-center font-bold text-lg cursor-pointer">
-            {getInitials(user.name)}
+          <div
+            className={`${avatarSize} rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white flex items-center justify-center font-bold cursor-pointer border border-gray-200 dark:border-gray-700 flex-shrink-0`}
+            aria-label={`Avatar for ${user.name}`}
+          >
+            {getInitials(user.name || "User")}
           </div>
         )}
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end">
-        <DropdownMenuLabel>
-          <div className="flex items-center gap-x-2">
-            <UserIcon className="w-5 h-5" /> Profile
-          </div>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel className="flex flex-col space-y-1 p-2">
+          <p className="text-sm font-medium leading-none">{user.name}</p>
+          <p className="text-xs leading-none text-muted-foreground">
+            {user.email}
+          </p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link to="/profile" className="flex items-center gap-x-2">
-            <Pencil className="w-5 h-5" /> Edit Profile
-          </Link>
-        </DropdownMenuItem>
-
-        <DropdownMenuItem asChild>
-          <Link to="/inbox" className="flex items-center gap-x-2">
-            <Inbox className="w-5 h-5" /> Inbox
+          <Link to="/profile" className="flex items-center gap-x-2 w-full">
+            <Pencil className={iconSize} /> Edit Profile
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link to="/notifications" className="flex items-center gap-x-2">
-            <MessageSquareIcon className="w-5 h-5" /> Notification
+          <Link to="/inbox" className="flex items-center gap-x-2 w-full">
+            <Inbox className={iconSize} /> Inbox
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link to="/settings" className="flex items-center gap-x-2">
-            <Settings className="w-5 h-5" /> Settings
+          <Link
+            to="/notifications"
+            className="flex items-center gap-x-2 w-full"
+          >
+            <MessageSquareIcon className={iconSize} /> Notifications
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/settings" className="flex items-center gap-x-2 w-full">
+            <Settings className={iconSize} /> Settings
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={handleLogout}
-          className="text-red-600 font-bold flex items-center justify-center"
+          className="flex items-center gap-x-2 text-destructive focus:text-destructive"
         >
-          Logout
+          <LogOut className={iconSize} /> Logout
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

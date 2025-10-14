@@ -86,11 +86,11 @@ const userSchema = new mongoose.Schema(
     lastLogin: {
       type: Date,
     },
+    age: Number,
   },
   { timestamps: true }
 );
 
-userSchema.index({ email: 1 });
 userSchema.index({ role: 1 });
 userSchema.index({ name: "text", location: "text" });
 
