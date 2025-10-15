@@ -1,8 +1,6 @@
 import { Route, Routes, Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/components/auth-provider";
 import type { JSX } from "react";
-import { cn } from "@/lib/utils";
-
 import HomePage from "./pages/Home";
 import AuthPage from "./pages/Auth";
 import NotFoundPage from "./pages/NotFound";
