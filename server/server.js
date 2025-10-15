@@ -7,6 +7,7 @@ import userRoutes from "./routes/user.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import otpRoutes from "./routes/otp.routes.js";
+import productRoutes from "./routes/product.routes.js";
 import { connectDB } from "./configs/db.js";
 
 const app = express();
@@ -25,6 +26,7 @@ app.use("/api/user", userRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/email-auth", authRoutes);
 app.use("/api/otp", otpRoutes);
+app.use("/api/products", productRoutes);
 app.all("/api/auth/*splat", toNodeHandler(auth));
 
 app.listen(port, () => {
