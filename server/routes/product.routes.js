@@ -4,6 +4,7 @@ import {
   deleteProduct,
   getProductById,
   getProducts,
+  getProductsByCategory,
   updateProduct,
 } from "../controllers/product.controller.js";
 import { requireAuth } from "../middlewares/auth.middleware.js";
@@ -19,5 +20,6 @@ router.get("/", getProducts);
 router.get("/:id", getProductById);
 router.put("/:id", requireAuth, updateProduct);
 router.delete("/:id", requireAuth, deleteProduct);
+router.get("/category/:category", getProductsByCategory);
 
 export default router;

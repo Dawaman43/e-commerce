@@ -201,12 +201,28 @@ export const deleteProduct = async (req, res) => {
   }
 };
 
-/**
- * Get products by category
- */
 export const getProductsByCategory = async (req, res) => {
   try {
-    // TODO: implement
+    const { category } = req.params;
+
+    if (!category) {
+      return res.status(400).json({ error: "Category is required." });
+    }
+
+    const products = await Product.find({
+      category: { $regex: new RegExp(category, "i") },
+    }).populate("seller", "name email");
+
+    if (!products || products.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "No products found for this category." });
+    }
+
+    return res.status(200).json({
+      message: `Products in category "${category}" fetched successfully`,
+      products,
+    });
   } catch (error) {
     console.error("Get products by category error:", error);
     res.status(500).json({ error: "Internal server error." });
