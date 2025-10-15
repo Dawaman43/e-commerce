@@ -169,3 +169,27 @@ export const getUsers = async (req, res) => {
     return res.status(500).json({ error: "Internal server error." });
   }
 };
+
+export const getUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: "User id must be provided" });
+    }
+
+    const user = await User.findById(id).select("-passwordHash");
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    return res.status(200).json({
+      message: "User fetched successfully",
+      user,
+    });
+  } catch (error) {
+    console.error("Get user error:", error);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};
