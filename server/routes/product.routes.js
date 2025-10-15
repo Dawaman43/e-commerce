@@ -10,6 +10,7 @@ import {
   getTopRatedProducts,
   searchProducts,
   updateProduct,
+  updateReview,
 } from "../controllers/product.controller.js";
 import { requireAuth } from "../middlewares/auth.middleware.js";
 import multer from "multer";
@@ -30,5 +31,6 @@ router.delete("/:id", requireAuth, deleteProduct);
 router.get("/seller/:sellerId", getProductsBySeller);
 router.get("/category/:category", getProductsByCategory);
 router.post("/:productId/reviews", requireAuth, addReview);
+router.put("/:productId/reviews/:reviewId", requireAuth, updateReview);
 
 export default router;

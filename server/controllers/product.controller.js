@@ -336,7 +336,71 @@ export const addReview = async (req, res) => {
       comment: comment || "",
       rating,
     };
+
     product.reviews.push(review);
+
+    const totalRating = product.reviews.reduce((sum, r) => sum + r.rating, 0);
+    product.rating = totalRating / product.reviews.length;
+
+    await product.save();
+
+    await product.populate({
+      path: "reviews.user",
+      select: "name email",
+    });
+
+    const newReview = product.reviews[product.reviews.length - 1];
+
+    return res.status(201).json({
+      message: "Review added successfully",
+      review: {
+        id: newReview._id,
+        user: newReview.user,
+        comment: newReview.comment,
+        rating: newReview.rating,
+      },
+      productRating: product.rating,
+    });
+  } catch (error) {
+    console.error("Add review error:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+export const updateReview = async (req, res) => {
+  try {
+    const { productId, reviewId } = req.params;
+    const { comment, rating } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ error: "Invalid product ID." });
+    }
+    if (!mongoose.Types.ObjectId.isValid(reviewId)) {
+      return res.status(400).json({ error: "Invalid review ID." });
+    }
+
+    if (rating !== undefined && (rating < 0 || rating > 5)) {
+      return res.status(400).json({ error: "Rating must be between 0 and 5." });
+    }
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ error: "Product not found." });
+    }
+
+    const review = product.reviews.id(reviewId);
+    if (!review) {
+      return res.status(404).json({ error: "Review not found." });
+    }
+
+    if (review.user.toString() !== req.user._id.toString()) {
+      return res
+        .status(403)
+        .json({ error: "You can only update your own reviews." });
+    }
+
+    if (comment !== undefined) review.comment = comment;
+    if (rating !== undefined) review.rating = rating;
 
     const totalRating = product.reviews.reduce((sum, r) => sum + r.rating, 0);
     product.rating = totalRating / product.reviews.length;
@@ -345,22 +409,10 @@ export const addReview = async (req, res) => {
 
     await product.populate("reviews.user", "name email");
 
-    return res.status(201).json({
-      message: "Review added successfully",
+    return res.status(200).json({
+      message: "Review updated successfully",
       product,
     });
-  } catch (error) {
-    console.error("Add review error:", error);
-    res.status(500).json({ error: "Internal server error." });
-  }
-};
-
-/**
- * Update a review
- */
-export const updateReview = async (req, res) => {
-  try {
-    // TODO: implement
   } catch (error) {
     console.error("Update review error:", error);
     res.status(500).json({ error: "Internal server error." });
