@@ -36,3 +36,49 @@ export const registerAdmin = async (req, res) => {
     return res.status(500).json({ error: "Internal server error." });
   }
 };
+
+export const addUsers = async (req, res) => {
+  try {
+    const { name, email, password, phone, location, age, role } = req.body;
+
+    if (!name || !email || !password)
+      return res
+        .status(400)
+        .json({ error: "Name, email, and password are required" });
+
+    const allowedRoles = ["user", "moderator"];
+    const userRole = role && allowedRoles.includes(role) ? role : "user";
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser)
+      return res
+        .status(400)
+        .json({ message: "User already exists with this email" });
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    const newUser = await User.create({
+      name,
+      email,
+      passwordHash,
+      phone: phone || "",
+      location: location || "",
+      age: age || null,
+      role: userRole,
+      isVerified: true,
+    });
+
+    const { passwordHash: _, ...userData } = newUser.toObject();
+
+    return res.status(201).json({
+      message: `${
+        userRole.charAt(0).toUpperCase() + userRole.slice(1)
+      } added successfully`,
+      user: userData,
+    });
+  } catch (error) {
+    console.log("User add error: ", error);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};

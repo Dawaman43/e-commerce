@@ -24,13 +24,15 @@ function HomePage() {
           transition={{ duration: 0.5 }}
         >
           <div
-            className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"
+            className="animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-2 border-primary"
             role="status"
             aria-label="Loading"
           >
             <span className="sr-only">Loading...</span>
           </div>
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            Loading...
+          </p>
         </motion.div>
       </div>
     );
@@ -51,7 +53,7 @@ function HomePage() {
       </motion.section>
 
       {/* Main Content Grid for better layout - added overflow-visible and adjusted spacing */}
-      <main className="container mx-auto px-4 py-8 md:py-12 space-y-12 md:space-y-16 overflow-visible">
+      <main className="container mx-auto px-4 py-6 sm:py-8 md:py-12 space-y-8 sm:space-y-10 md:space-y-12 lg:space-y-16 overflow-visible">
         {/* Quick Actions Row - Single column - only for logged in */}
         {isLoggedIn && (
           <motion.section
@@ -59,32 +61,10 @@ function HomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6 }}
-            className="grid grid-cols-1 gap-6 w-full"
+            className="grid grid-cols-1 gap-4 sm:gap-6 w-full"
           >
-            <div className="bg-card rounded-lg p-6 shadow-md border border-border hover:shadow-lg transition-shadow overflow-visible">
+            <div className="bg-card rounded-lg p-4 sm:p-6 shadow-md border border-border hover:shadow-lg transition-shadow overflow-visible">
               <NewProduct />
-            </div>
-            {/* Stats as full-width single column */}
-            <div className="bg-card rounded-lg p-6 shadow-md border border-border overflow-visible">
-              <h3 className="text-xl font-semibold mb-4">Quick Stats</h3>
-              <div className="grid grid-cols-1 gap-4 text-center">
-                <div>
-                  <p className="text-2xl font-bold text-primary">12</p>
-                  <p className="text-sm text-muted-foreground">
-                    Active Listings
-                  </p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-primary">5</p>
-                  <p className="text-sm text-muted-foreground">
-                    Pending Orders
-                  </p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-primary">$450</p>
-                  <p className="text-sm text-muted-foreground">Total Sales</p>
-                </div>
-              </div>
             </div>
           </motion.section>
         )}
@@ -95,7 +75,7 @@ function HomePage() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="grid grid-cols-1 gap-8 w-full overflow-visible"
+          className="grid grid-cols-1 gap-6 sm:gap-8 w-full overflow-visible"
         >
           <TopSellers />
           {isLoggedIn ? (
@@ -106,15 +86,15 @@ function HomePage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-100px" }}
               transition={{ duration: 0.6 }}
-              className="bg-card rounded-lg p-8 shadow-md border border-border overflow-visible text-center"
+              className="bg-card rounded-lg p-6 sm:p-8 shadow-md border border-border overflow-visible text-center"
             >
               <CardHeader>
-                <CardTitle className="text-xl mb-2">
+                <CardTitle className="text-lg sm:text-xl mb-2">
                   Sign In for Your Orders
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground mb-6">
+                <p className="text-sm sm:text-base text-muted-foreground mb-6">
                   Log in to view your active orders and track your trades.
                 </p>
                 <Button asChild className="w-full">
@@ -144,7 +124,7 @@ function HomePage() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.6, delay: 0.6 }}
-          className="pt-12 border-t border-border w-full overflow-visible"
+          className="pt-8 sm:pt-12 border-t border-border w-full overflow-visible"
         >
           <NewsletterSignup />
         </motion.footer>

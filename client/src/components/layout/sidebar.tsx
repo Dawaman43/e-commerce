@@ -1,6 +1,6 @@
 // components/layout/Sidebar.tsx
-import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, Menu, LogOut, HelpCircle } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
@@ -39,15 +39,36 @@ interface NavLink {
   children?: NavLink[];
 }
 
-function Sidebar() {
-  const [openSections, setOpenSections] = useState<Set<number>>(new Set());
-  const [isCollapsed, setIsCollapsed] = useState(false);
+interface SidebarProps {
+  className?: string;
+  isCollapsed: boolean;
+  onToggle: () => void;
+}
+
+function Sidebar({ className, isCollapsed, onToggle }: SidebarProps) {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const role = user?.role || "user";
 
+  useEffect(() => {
+    const body = document.body;
+    if (isCollapsed) {
+      body.classList.remove("sidebar-expanded");
+      body.classList.add("sidebar-collapsed");
+    } else {
+      body.classList.add("sidebar-expanded");
+      body.classList.remove("sidebar-collapsed");
+    }
+
+    return () => {
+      body.classList.remove("sidebar-expanded", "sidebar-collapsed");
+    };
+  }, [isCollapsed]);
+
   // Toggle function for submenus
+  const [openSections, setOpenSections] = useState<Set<number>>(new Set());
+
   const toggleSection = (id: number) => {
     setOpenSections((prev) => {
       const newSet = new Set(prev);
@@ -287,8 +308,9 @@ function Sidebar() {
   return (
     <aside
       className={cn(
-        "bg-card border-r shadow-sm flex flex-col transition-all duration-300 ease-in-out h-full",
-        isCollapsed ? "w-20" : "w-64"
+        "fixed top-16 left-0 z-50 h-[calc(100vh-4rem)] bg-card border-r shadow-sm flex flex-col transition-all duration-300 ease-in-out",
+        isCollapsed ? "w-20" : "w-64",
+        className
       )}
     >
       {/* Header - No logo */}
@@ -297,7 +319,7 @@ function Sidebar() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setIsCollapsed(!isCollapsed)}
+          onClick={onToggle}
           className="h-8 w-8"
         >
           <Menu className="h-4 w-4" />
@@ -310,7 +332,7 @@ function Sidebar() {
       </nav>
 
       {/* Footer Actions */}
-      <div className="p-4 border-t bg-card/50 space-y-2 shrink-0">
+      <div className="p-4 border-t bg-card/50 space-y-2">
         {user && (
           <>
             <Button

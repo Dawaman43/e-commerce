@@ -9,6 +9,43 @@ import { AuthProvider } from "./components/auth-provider.tsx";
 import { Toaster } from "sonner";
 import Footer from "./components/layout/footer.tsx";
 import Sidebar from "./components/layout/sidebar.tsx";
+import { useState } from "react";
+import { cn } from "./lib/utils.ts";
+
+function Layout() {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const toggleSidebar = () => setIsCollapsed(!isCollapsed);
+
+  const sidebarWidthClass = isCollapsed ? "ml-20" : "ml-64";
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      <Header />
+      <div className="flex flex-1">
+        <Sidebar
+          className="hidden md:block"
+          isCollapsed={isCollapsed}
+          onToggle={toggleSidebar}
+        />
+        <main
+          className={cn(
+            "flex-1 transition-all duration-300 ease-in-out md:" +
+              sidebarWidthClass,
+            "hidden md:block" // Ensure main adjusts only on md+ where sidebar is visible
+          )}
+        >
+          <App />
+          <Footer />
+        </main>
+        {/* For mobile, show full width without margin */}
+        <main className="flex-1 md:hidden">
+          <App />
+        </main>
+      </div>
+    </div>
+  );
+}
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -16,16 +53,7 @@ createRoot(document.getElementById("root")!).render(
       <AuthProvider>
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
           <Toaster richColors position="top-right" />
-          <div className="flex flex-col min-h-screen">
-            <Header />
-            <div className="flex flex-1">
-              <Sidebar />
-              <main className="flex-1 transition-all duration-300 ease-in-out">
-                <App />
-              </main>
-            </div>
-            <Footer />
-          </div>
+          <Layout />
         </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>

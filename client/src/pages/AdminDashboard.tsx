@@ -156,35 +156,37 @@ function AdminDashboard() {
 
   return (
     <>
-      {/* Main Content - Offset for fixed sidebar */}
-      <div className="flex h-screen bg-background ml-64">
+      {/* Main Content - Responsive offset for fixed sidebar */}
+      <div className="flex min-h-screen bg-background md:ml-64">
         {/* Body */}
-        <main className="flex-1 overflow-auto p-6 space-y-6">
-          {/* Search Input - Moved from header */}
-          <div className="flex items-center space-x-4">
+        <main className="flex-1 overflow-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+          {/* Search Input - Responsive width */}
+          <div className="flex items-center space-x-2 sm:space-x-4">
             <Input
               placeholder="Search users, listings, or transactions..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-80"
+              className="w-full sm:w-80"
             />
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Stats Cards - Responsive grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {mockStats.map((stat, index) => {
               const Icon = stat.icon;
               const isPositive = stat.change.startsWith("+");
               return (
                 <Card key={index} className="hover:shadow-lg transition-shadow">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
+                    <CardTitle className="text-xs sm:text-sm font-medium">
                       {stat.title}
                     </CardTitle>
                     <Icon className={`h-4 w-4 ${stat.color}`} />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{stat.value}</div>
+                    <div className="text-xl sm:text-2xl font-bold">
+                      {stat.value}
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       {stat.change} from last month
                     </p>
@@ -196,12 +198,14 @@ function AdminDashboard() {
 
           <Separator />
 
-          {/* Charts and Reports */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Charts and Reports - Responsive grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Listings & Transactions Chart */}
             <Card className="lg:col-span-2">
               <CardHeader>
-                <CardTitle>Marketplace Activity</CardTitle>
+                <CardTitle className="text-lg sm:text-xl">
+                  Marketplace Activity
+                </CardTitle>
                 <CardDescription>
                   New listings and transactions over time.
                 </CardDescription>
@@ -209,7 +213,7 @@ function AdminDashboard() {
               <CardContent className="pl-2">
                 <ChartContainer
                   config={chartConfig}
-                  className="aspect-auto h-[250px] w-full"
+                  className="h-[200px] sm:h-[250px] w-full"
                 >
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
@@ -222,12 +226,14 @@ function AdminDashboard() {
                         tickLine={false}
                         axisLine={false}
                         tickMargin={8}
+                        tick={{ fontSize: 12 }}
                       />
                       <YAxis
                         orientation="right"
                         tickLine={false}
                         axisLine={false}
                         tickMargin={8}
+                        tick={{ fontSize: 12 }}
                       />
                       <Tooltip content={<ChartTooltipContent />} />
                       <Legend content={<ChartLegend />} />
@@ -250,11 +256,13 @@ function AdminDashboard() {
             {/* Active Disputes */}
             <Card>
               <CardHeader>
-                <CardTitle>Active Disputes</CardTitle>
+                <CardTitle className="text-lg sm:text-xl">
+                  Active Disputes
+                </CardTitle>
                 <CardDescription>Resolve user issues promptly.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {[
                     {
                       id: "#DSP001",
@@ -277,17 +285,17 @@ function AdminDashboard() {
                   ].map((dispute, index) => (
                     <div
                       key={index}
-                      className="flex items-center space-x-3 p-2 rounded-md hover:bg-muted"
+                      className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted"
                     >
-                      <AlertTriangle className="h-4 w-4 text-destructive" />
+                      <AlertTriangle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium leading-none">
+                        <p className="text-xs sm:text-sm font-medium leading-tight">
                           {dispute.id}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground truncate">
                           {dispute.parties}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground truncate">
                           {dispute.issue}
                         </p>
                         <p className="text-xs text-muted-foreground">
@@ -303,54 +311,72 @@ function AdminDashboard() {
 
           <Separator />
 
-          {/* Recent Transactions Table */}
+          {/* Recent Transactions Table - Responsive with horizontal scroll */}
           <Card>
             <CardHeader>
-              <CardTitle>Recent P2P Transactions</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">
+                Recent P2P Transactions
+              </CardTitle>
               <CardDescription>Latest peer-to-peer deals.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Seller</TableHead>
-                    <TableHead>Buyer</TableHead>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTransactions.map((transaction) => (
-                    <TableRow key={transaction.id}>
-                      <TableCell className="font-medium">
-                        {transaction.id}
-                      </TableCell>
-                      <TableCell>{transaction.seller}</TableCell>
-                      <TableCell>{transaction.buyer}</TableCell>
-                      <TableCell className="max-w-[150px] truncate">
-                        {transaction.item}
-                      </TableCell>
-                      <TableCell>{transaction.amount}</TableCell>
-                      <TableCell>
-                        <Badge
-                          className={cn(
-                            "text-xs",
-                            statusColors[
-                              transaction.status as keyof typeof statusColors
-                            ]
-                          )}
-                        >
-                          {transaction.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{transaction.date}</TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[80px]">ID</TableHead>
+                      <TableHead className="w-[100px] sm:w-auto">
+                        Seller
+                      </TableHead>
+                      <TableHead className="w-[100px] sm:w-auto">
+                        Buyer
+                      </TableHead>
+                      <TableHead className="w-[120px] sm:w-[150px]">
+                        Item
+                      </TableHead>
+                      <TableHead className="w-[90px]">Amount</TableHead>
+                      <TableHead className="w-[100px]">Status</TableHead>
+                      <TableHead className="w-[90px]">Date</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredTransactions.map((transaction) => (
+                      <TableRow key={transaction.id}>
+                        <TableCell className="font-medium w-[80px]">
+                          {transaction.id}
+                        </TableCell>
+                        <TableCell className="w-[100px] sm:w-auto">
+                          {transaction.seller}
+                        </TableCell>
+                        <TableCell className="w-[100px] sm:w-auto">
+                          {transaction.buyer}
+                        </TableCell>
+                        <TableCell className="max-w-[120px] sm:max-w-[150px] truncate">
+                          {transaction.item}
+                        </TableCell>
+                        <TableCell className="w-[90px]">
+                          {transaction.amount}
+                        </TableCell>
+                        <TableCell className="w-[100px]">
+                          <Badge
+                            className={cn(
+                              "text-xs",
+                              statusColors[
+                                transaction.status as keyof typeof statusColors
+                              ]
+                            )}
+                          >
+                            {transaction.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="w-[90px]">
+                          {transaction.date}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </main>
@@ -363,7 +389,7 @@ function AdminDashboard() {
 const ChartLegend = ({ payload }: { payload?: any[] }) => {
   if (!payload) return null;
   return (
-    <ul className="flex space-x-4 text-xs">
+    <ul className="flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-4 text-xs">
       {payload.map((entry, index) => (
         <li
           key={`legend-${index}`}

@@ -1,6 +1,7 @@
 import { Route, Routes, Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/components/auth-provider";
 import type { JSX } from "react";
+import { cn } from "@/lib/utils";
 
 import HomePage from "./pages/Home";
 import AuthPage from "./pages/Auth";
@@ -29,6 +30,10 @@ import OrderHistory from "./pages/OrderHistory";
 import AdminDashboard from "./pages/AdminDashboard";
 import UsersPage from "./pages/Users";
 import ModeratorDashboard from "./pages/ModeratorDashboard";
+
+interface AppProps {
+  className?: string;
+}
 
 // ✅ Protected Route - waits for auth loading before redirecting
 function ProtectedRoute({ children }: { children: JSX.Element }) {
@@ -110,7 +115,7 @@ function HomeWrapper({ children }: { children: JSX.Element }) {
 }
 
 // ✅ Main App Routes
-const App = () => {
+const App = ({ className }: AppProps) => {
   const { loading } = useAuth();
 
   // Optional: global loading screen during initial auth check
@@ -123,122 +128,124 @@ const App = () => {
   }
 
   return (
-    <Routes>
-      {/* Public Home */}
-      <Route
-        path="/"
-        element={
-          <HomeWrapper>
-            <HomePage />
-          </HomeWrapper>
-        }
-      />
+    <div className={className}>
+      <Routes>
+        {/* Public Home */}
+        <Route
+          path="/"
+          element={
+            <HomeWrapper>
+              <HomePage />
+            </HomeWrapper>
+          }
+        />
 
-      {/* Authentication */}
-      <Route
-        path="/auth"
-        element={
-          <AuthRoute>
-            <AuthPage />
-          </AuthRoute>
-        }
-      />
+        {/* Authentication */}
+        <Route
+          path="/auth"
+          element={
+            <AuthRoute>
+              <AuthPage />
+            </AuthRoute>
+          }
+        />
 
-      {/* User Protected Routes */}
-      <Route
-        path="/profile"
-        element={
-          <ProtectedRoute>
-            <ProfilePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/sell"
-        element={
-          <ProtectedRoute>
-            <SellPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute>
-            <SettingsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/inbox"
-        element={
-          <ProtectedRoute>
-            <InboxPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/notifications"
-        element={
-          <ProtectedRoute>
-            <NotificationsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/dashboard/orders"
-        element={
-          <ProtectedRoute>
-            <OrdersPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/dashboard/orders/history"
-        element={
-          <ProtectedRoute>
-            <OrderHistory />
-          </ProtectedRoute>
-        }
-      />
+        {/* User Protected Routes */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sell"
+          element={
+            <ProtectedRoute>
+              <SellPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/inbox"
+          element={
+            <ProtectedRoute>
+              <InboxPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <NotificationsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/orders"
+          element={
+            <ProtectedRoute>
+              <OrdersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/orders/history"
+          element={
+            <ProtectedRoute>
+              <OrderHistory />
+            </ProtectedRoute>
+          }
+        />
 
-      {/* Admin Routes */}
-      <Route path="/admin" element={<RoleRoute allowedRoles={["admin"]} />}>
-        <Route path="dashboard" element={<AdminDashboard />} />
-        <Route path="users" element={<UsersPage />} />
-        <Route index element={<Navigate to="dashboard" replace />} />
-      </Route>
+        {/* Admin Routes */}
+        <Route path="/admin" element={<RoleRoute allowedRoles={["admin"]} />}>
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="users" element={<UsersPage />} />
+          <Route index element={<Navigate to="dashboard" replace />} />
+        </Route>
 
-      {/* Moderator Routes */}
-      <Route
-        path="/moderator"
-        element={<RoleRoute allowedRoles={["moderator"]} />}
-      >
-        <Route path="dashboard" element={<ModeratorDashboard />} />
-        <Route index element={<Navigate to="dashboard" replace />} />
-      </Route>
+        {/* Moderator Routes */}
+        <Route
+          path="/moderator"
+          element={<RoleRoute allowedRoles={["moderator"]} />}
+        >
+          <Route path="dashboard" element={<ModeratorDashboard />} />
+          <Route index element={<Navigate to="dashboard" replace />} />
+        </Route>
 
-      {/* Public Static Pages */}
-      <Route path="/about" element={<AboutUsPage />} />
-      <Route path="/blog" element={<BlogPage />} />
-      <Route path="/careers" element={<CareerPage />} />
-      <Route path="/press" element={<PressPage />} />
-      <Route path="/privacy" element={<PrivacyPage />} />
-      <Route path="/terms" element={<TermPage />} />
-      <Route path="/help" element={<HelpPage />} />
-      <Route path="/contact" element={<ContactPage />} />
-      <Route path="/trade" element={<TradePage />} />
-      <Route path="/listings" element={<ListingPage />} />
-      <Route path="/sellers" element={<SellersPage />} />
-      <Route path="/categories" element={<CategoriesPage />} />
+        {/* Public Static Pages */}
+        <Route path="/about" element={<AboutUsPage />} />
+        <Route path="/blog" element={<BlogPage />} />
+        <Route path="/careers" element={<CareerPage />} />
+        <Route path="/press" element={<PressPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermPage />} />
+        <Route path="/help" element={<HelpPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/trade" element={<TradePage />} />
+        <Route path="/listings" element={<ListingPage />} />
+        <Route path="/sellers" element={<SellersPage />} />
+        <Route path="/categories" element={<CategoriesPage />} />
 
-      {/* Public Dynamic Pages */}
-      <Route path="/product/:id" element={<ProductPage />} />
-      <Route path="/seller/:id" element={<SellerPage />} />
+        {/* Public Dynamic Pages */}
+        <Route path="/product/:id" element={<ProductPage />} />
+        <Route path="/seller/:id" element={<SellerPage />} />
 
-      {/* 404 Page */}
-      <Route path="/*" element={<NotFoundPage />} />
-    </Routes>
+        {/* 404 Page */}
+        <Route path="/*" element={<NotFoundPage />} />
+      </Routes>
+    </div>
   );
 };
 
