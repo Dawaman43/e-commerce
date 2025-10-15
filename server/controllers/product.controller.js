@@ -322,7 +322,7 @@ export const addReview = async (req, res) => {
       return res.status(400).json({ error: "Invalid product ID." });
     }
 
-    if (!rating || rating < 0 || rating > 5) {
+    if (rating == null || rating < 0 || rating > 5) {
       return res.status(400).json({ error: "Rating must be between 0 and 5." });
     }
 
@@ -338,14 +338,12 @@ export const addReview = async (req, res) => {
     };
 
     product.reviews.push(review);
-
-    const totalRating = product.reviews.reduce((sum, r) => sum + r.rating, 0);
-    product.rating = totalRating / product.reviews.length;
-
     await product.save();
 
+    await calculateProductRating(productId);
+
     await product.populate({
-      path: "reviews.user",
+      path: `reviews.${product.reviews.length - 1}.user`,
       select: "name email",
     });
 
@@ -378,20 +376,15 @@ export const updateReview = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(reviewId)) {
       return res.status(400).json({ error: "Invalid review ID." });
     }
-
     if (rating !== undefined && (rating < 0 || rating > 5)) {
       return res.status(400).json({ error: "Rating must be between 0 and 5." });
     }
 
     const product = await Product.findById(productId);
-    if (!product) {
-      return res.status(404).json({ error: "Product not found." });
-    }
+    if (!product) return res.status(404).json({ error: "Product not found." });
 
     const review = product.reviews.id(reviewId);
-    if (!review) {
-      return res.status(404).json({ error: "Review not found." });
-    }
+    if (!review) return res.status(404).json({ error: "Review not found." });
 
     if (review.user.toString() !== req.user._id.toString()) {
       return res
@@ -402,16 +395,28 @@ export const updateReview = async (req, res) => {
     if (comment !== undefined) review.comment = comment;
     if (rating !== undefined) review.rating = rating;
 
-    const totalRating = product.reviews.reduce((sum, r) => sum + r.rating, 0);
-    product.rating = totalRating / product.reviews.length;
-
     await product.save();
 
-    await product.populate("reviews.user", "name email");
+    await calculateProductRating(productId);
+
+    await product.populate({
+      path: `reviews.${product.reviews.findIndex((r) =>
+        r._id.equals(reviewId)
+      )}.user`,
+      select: "name email",
+    });
+
+    const updatedReview = product.reviews.id(reviewId);
 
     return res.status(200).json({
       message: "Review updated successfully",
-      product,
+      review: {
+        id: updatedReview._id,
+        user: updatedReview.user,
+        comment: updatedReview.comment,
+        rating: updatedReview.rating,
+      },
+      productRating: product.rating,
     });
   } catch (error) {
     console.error("Update review error:", error);
@@ -588,13 +593,31 @@ export const decrementProductStock = async (req, res) => {
   }
 };
 
-/**
- * Calculate product rating from reviews
- */
 export const calculateProductRating = async (productId) => {
   try {
-    // TODO: implement
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      throw new Error("Invalid product ID.");
+    }
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      throw new Error("Product not found.");
+    }
+
+    const reviews = product.reviews || [];
+    if (reviews.length === 0) {
+      product.rating = 0;
+    } else {
+      const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
+      const avgRating = totalRating / reviews.length;
+      product.rating = parseFloat(avgRating.toFixed(2));
+    }
+
+    await product.save();
+
+    return product.rating;
   } catch (error) {
     console.error("Calculate product rating error:", error);
+    return 0;
   }
 };
