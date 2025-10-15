@@ -1,6 +1,7 @@
 import express from "express";
 import {
   createProduct,
+  deleteProduct,
   getProductById,
   getProducts,
   updateProduct,
@@ -17,5 +18,6 @@ router.post("/", requireAuth, upload.array("images", 5), createProduct);
 router.get("/", getProducts);
 router.get("/:id", getProductById);
 router.put("/:id", requireAuth, updateProduct);
+router.delete("/:id", requireAuth, deleteProduct);
 
 export default router;

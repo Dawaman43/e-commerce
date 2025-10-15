@@ -173,13 +173,28 @@ export const updateProduct = async (req, res) => {
   }
 };
 
-/**
- * Delete a product
- * Only the seller of the product can delete
- */
 export const deleteProduct = async (req, res) => {
   try {
-    // TODO: implement
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: "Product ID is required." });
+    }
+
+    const product = await Product.findById(id);
+    if (!product) {
+      return res.status(404).json({ error: "Product not found." });
+    }
+
+    if (!req.user || product.seller.toString() !== req.user._id.toString()) {
+      return res
+        .status(403)
+        .json({ error: "Not authorized to delete this product." });
+    }
+
+    await Product.findByIdAndDelete(id);
+
+    return res.status(200).json({ message: "Product deleted successfully." });
   } catch (error) {
     console.error("Delete product error:", error);
     res.status(500).json({ error: "Internal server error." });
