@@ -2,8 +2,6 @@ import { useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { motion } from "framer-motion";
 import { useInView } from "framer-motion";
 import { useRef } from "react";
@@ -11,73 +9,15 @@ import {
   ShoppingCart,
   Heart,
   Share,
-  MapPin,
-  Truck,
   MessageCircle,
   User,
   Calendar,
   DollarSign,
   Tag,
-  Eye, // Added missing import
+  Truck, // ✅ Added missing import
 } from "lucide-react";
-
-// Mock product data - replace with API fetch based on id (e.g., useQuery)
-const mockProducts: Record<number, Product> = {
-  // Added explicit type for index signature
-  4: {
-    id: 4,
-    title: "Vintage Vinyl Record Player",
-    description:
-      "A beautifully restored vintage vinyl record player from the 1970s. Perfect for audiophiles and collectors. Includes original stylus and dust cover.",
-    price: "$150",
-    category: "Electronics",
-    condition: "Like New",
-    location: "Brooklyn, NY",
-    seller: "Alex Rivera",
-    images: [
-      "https://via.placeholder.com/600x400?text=Vintage+Vinyl+Record+Player",
-      "https://via.placeholder.com/600x400?text=Side+View",
-      "https://via.placeholder.com/600x400?text=Details",
-    ],
-    datePosted: "Oct 10, 2025",
-    views: 245,
-    likes: 12,
-  },
-  5: {
-    id: 5,
-    title: "Wireless Gaming Headset",
-    description:
-      "High-quality wireless gaming headset with noise cancellation and 20-hour battery life. Compatible with PC, PS5, and Xbox. Comes with extra ear cushions.",
-    price: "Trade for PS5 or $80",
-    category: "Gaming",
-    condition: "Excellent",
-    location: "Manhattan, NY",
-    seller: "Jordan Lee",
-    images: [
-      "https://via.placeholder.com/600x400?text=Wireless+Gaming+Headset",
-      "https://via.placeholder.com/600x400?text=Comfort+Fit",
-      "https://via.placeholder.com/600x400?text=Mic+View",
-    ],
-    datePosted: "Oct 12, 2025",
-    views: 189,
-    likes: 8,
-  },
-};
-
-type Product = {
-  id: number;
-  title: string;
-  description: string;
-  price: string;
-  category: string;
-  condition: string;
-  location: string;
-  seller: string;
-  images: string[];
-  datePosted: string;
-  views: number;
-  likes: number;
-};
+import { getProductById } from "@/api/product";
+import type { Product } from "@/types/product";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -94,25 +34,54 @@ const itemVariants = {
 
 function ProductPage() {
   const { id } = useParams<{ id: string }>();
-  const productId = id ? parseInt(id, 10) : 0;
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, amount: 0.3 });
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  useEffect(() => {
-    // Simulate API fetch
-    const timer = setTimeout(() => {
-      if (mockProducts[productId]) {
-        setProduct(mockProducts[productId]);
-      }
-      setLoading(false);
-    }, 500);
+  // ✅ ADD DEBUG LOG: Component mount
+  console.log("=== PRODUCT PAGE DEBUG ===");
+  console.log("Component mounted with ID:", id);
+  console.log("Ref in view:", isInView);
 
-    return () => clearTimeout(timer);
-  }, [productId]);
+  useEffect(() => {
+    const fetchProduct = async () => {
+      console.log("=== FETCH EFFECT TRIGGERED ===");
+      console.log("ID from params:", id);
+      if (!id) {
+        console.log("No ID - setting error");
+        setError("No product ID provided.");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        console.log("Calling getProductById with ID:", id);
+        const response = await getProductById(id);
+        console.log("API Response:", response);
+        console.log("Product from response:", response.product);
+        setProduct(response.product);
+        if (!response.product) {
+          console.log("No product in response - setting error");
+          setError("Product not found in API response.");
+        }
+      } catch (err) {
+        console.error("Fetch error:", err);
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        setError(`Failed to load product: ${errorMessage}`);
+      } finally {
+        setLoading(false);
+        console.log("Loading set to false");
+      }
+    };
+
+    fetchProduct();
+  }, [id]);
 
   const handleNextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % (product?.images.length || 1));
@@ -124,7 +93,30 @@ function ProductPage() {
     );
   };
 
+  // ✅ ADD DEBUG LOG: Render states + FULL PRODUCT DATA
+  console.log(
+    "Render - Loading:",
+    loading,
+    "Error:",
+    error,
+    "Product exists:",
+    !!product
+  );
+  if (product) {
+    console.log("Full product data:", {
+      name: product.name,
+      price: product.price,
+      images: product.images,
+      description: product.description,
+      seller: product.seller,
+      category: product.category,
+      stock: product.stock,
+      rating: product.rating,
+    });
+  }
+
   if (loading) {
+    console.log("Rendering LOADING spinner");
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -135,15 +127,16 @@ function ProductPage() {
     );
   }
 
-  if (!product) {
+  if (error || !product) {
+    console.log("Rendering ERROR/Not Found");
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-foreground mb-2">
-            Product Not Found
+            {error || "Product Not Found"}
           </h2>
           <p className="text-muted-foreground mb-4">
-            The requested product does not exist.
+            {error || "The requested product does not exist."}
           </p>
           <Button asChild>
             <a href="/listings">Browse All Listings</a>
@@ -153,29 +146,51 @@ function ProductPage() {
     );
   }
 
+  console.log("Rendering PRODUCT content");
+  const formattedDate = new Date(
+    product.createdAt || new Date()
+  ).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+
   return (
-    <section ref={ref} className="py-8 md:py-12 bg-background">
+    <section ref={ref} className="py-8 md:py-12 bg-background min-h-screen">
+      {" "}
+      {/* ✅ Added min-h-screen for visibility */}
       <div className="container mx-auto px-4 md:px-8 lg:px-16">
         <motion.div
           className="grid md:grid-cols-2 gap-8 lg:gap-12"
           variants={containerVariants}
           initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
+          animate="visible" // ✅ Force visible for testing (remove isInView dep)
         >
           {/* Images */}
           <motion.div variants={itemVariants} className="space-y-4">
-            <div className="relative">
+            <div className="relative bg-gray-200 rounded-lg shadow-lg overflow-hidden">
+              {" "}
+              {/* ✅ Fallback bg for empty img */}
               <img
-                src={product.images[currentImageIndex]}
-                alt={product.title}
-                className="w-full h-96 object-cover rounded-lg shadow-lg"
+                src={
+                  product.images[currentImageIndex] ||
+                  "https://via.placeholder.com/600x400?text=No+Image"
+                }
+                alt={product.name || "Product"}
+                className="w-full h-96 object-cover"
+                onError={(e) => {
+                  // ✅ Handle broken images
+                  console.log("Image load error:", e);
+                  (e.target as HTMLImageElement).src =
+                    "https://via.placeholder.com/600x400?text=No+Image";
+                }}
               />
-              {product.images.length > 1 && (
-                <div className="absolute inset-0 flex items-center justify-between p-4">
+              {product.images && product.images.length > 1 && (
+                <div className="absolute inset-0 flex items-center justify-between p-4 bg-black/20">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-10 w-10 p-0 rounded-full"
+                    className="h-10 w-10 p-0 rounded-full bg-white/80 hover:bg-white"
                     onClick={handlePrevImage}
                   >
                     ←
@@ -183,7 +198,7 @@ function ProductPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-10 w-10 p-0 rounded-full"
+                    className="h-10 w-10 p-0 rounded-full bg-white/80 hover:bg-white"
                     onClick={handleNextImage}
                   >
                     →
@@ -191,22 +206,26 @@ function ProductPage() {
                 </div>
               )}
             </div>
-            {product.images.length > 1 && (
+            {product.images && product.images.length > 1 && (
               <div className="flex gap-2 overflow-x-auto">
                 {product.images.map((img, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}
-                    className={`flex-shrink-0 w-20 h-20 rounded-md overflow-hidden border-2 ${
+                    className={`flex-shrink-0 w-20 h-20 rounded-md overflow-hidden border-2 transition-all ${
                       index === currentImageIndex
                         ? "border-primary ring-2 ring-primary/20"
-                        : "border-border"
+                        : "border-border hover:border-primary"
                     }`}
                   >
                     <img
                       src={img}
-                      alt={`${product.title} ${index + 1}`}
+                      alt={`${product.name || "Product"} ${index + 1}`}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src =
+                          "https://via.placeholder.com/80x80?text=Img+${index + 1}";
+                      }}
                     />
                   </button>
                 ))}
@@ -220,40 +239,44 @@ function ProductPage() {
               <div className="flex items-center gap-2 mb-2">
                 <Badge variant="secondary">
                   <Tag className="w-3 h-3 mr-1" />
-                  {product.category}
+                  {product.category || "Uncategorized"}
                 </Badge>
-                <Badge variant="outline">{product.condition}</Badge>
               </div>
               <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-                {product.title}
+                {product.name || "Unnamed Product"} {/* ✅ Fallback */}
               </h1>
               <div className="flex items-center gap-2 mb-4">
                 <DollarSign className="w-5 h-5 text-primary" />
                 <span className="text-2xl font-bold text-primary">
-                  {product.price}
+                  ${product.price || "0.00"} {/* ✅ Fallback & $ prefix */}
                 </span>
               </div>
             </div>
 
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <MapPin className="w-4 h-4" />
-                <span>{product.location}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <User className="w-4 h-4" />
-                <span>Sold by {product.seller}</span>
+                <span>
+                  Sold by {product.seller?.name || "Unknown Seller"}
+                </span>{" "}
+                {/* ✅ Safe access */}
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Calendar className="w-4 h-4" />
-                <span>Posted on {product.datePosted}</span>
+                <span>Posted on {formattedDate}</span>
               </div>
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <Eye className="w-4 h-4" />
-                <span>{product.views} views</span>
-                <Heart className="w-4 h-4" />
-                <span>{product.likes} likes</span>
-              </div>
+              {product.stock && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span className="w-4 h-4">📦</span>
+                  <span>{product.stock} in stock</span>
+                </div>
+              )}
+              {product.rating && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span className="w-4 h-4">⭐</span>
+                  <span>{product.rating} rating</span>
+                </div>
+              )}
             </div>
 
             <div className="space-y-4">
@@ -279,13 +302,15 @@ function ProductPage() {
           className="mt-12"
           variants={containerVariants}
           initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
+          animate="visible" // ✅ Force visible
         >
           <h2 className="text-2xl font-bold text-foreground mb-6">
             Description
           </h2>
-          <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
-            {product.description}
+          <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap bg-card p-4 rounded-lg">
+            {" "}
+            {/* ✅ Fallback bg for visibility */}
+            {product.description || "No description available."}
           </p>
         </motion.div>
 
@@ -294,7 +319,7 @@ function ProductPage() {
           className="mt-12 border-t pt-8"
           variants={itemVariants}
           initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
+          animate="visible" // ✅ Force visible
         >
           <h3 className="text-xl font-semibold text-foreground mb-4">
             Contact Seller
