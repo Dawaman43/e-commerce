@@ -1,14 +1,5 @@
-import { motion, useInView } from "framer-motion";
-import { useRef, useState } from "react";
-import {
-  Search,
-  Filter,
-  ArrowRight,
-  ChevronRight,
-  Clock,
-  Calendar,
-  Tag,
-} from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Filter, ArrowRight, ChevronRight, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -20,113 +11,68 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { easeOut } from "framer-motion";
-
-// Mock categories
-const categories = [
-  {
-    id: 1,
-    name: "Electronics",
-    description: "Gadgets, devices, and tech accessories for modern living.",
-    count: 250,
-    icon: "📱",
-    featuredItems: ["iPhone 14", "Wireless Headphones", "Smart Watch"],
-    slug: "electronics",
-  },
-  {
-    id: 2,
-    name: "Fashion",
-    description: "Clothing, shoes, and accessories to refresh your style.",
-    count: 320,
-    icon: "👕",
-    featuredItems: ["Leather Jacket", "Designer Sneakers", "Vintage Dress"],
-    slug: "fashion",
-  },
-  {
-    id: 3,
-    name: "Home & Garden",
-    description: "Furniture, decor, and tools to enhance your space.",
-    count: 180,
-    icon: "🏠",
-    featuredItems: ["Ceramic Mug Set", "Garden Tools", "Wall Art"],
-    slug: "home-garden",
-  },
-  {
-    id: 4,
-    name: "Sports",
-    description: "Gear and equipment for active lifestyles.",
-    count: 140,
-    icon: "🚴",
-    featuredItems: ["Mountain Bike", "Yoga Mat", "Running Shoes"],
-    slug: "sports",
-  },
-  {
-    id: 5,
-    name: "Books",
-    description: "New and used books for every reader.",
-    count: 90,
-    icon: "📚",
-    featuredItems: ["Fiction Bestseller", "Cookbook", "Self-Help"],
-    slug: "books",
-  },
-  {
-    id: 6,
-    name: "Musical Instruments",
-    description: "Instruments and music gear for creators.",
-    count: 60,
-    icon: "🎸",
-    featuredItems: ["Acoustic Guitar", "Keyboard", "Drum Set"],
-    slug: "music",
-  },
-];
-
-// Mock filter categories (sub-categories or tags)
-const filterTags = [
-  { name: "New", count: 450, slug: "new" },
-  { name: "Used", count: 380, slug: "used" },
-  { name: "Vintage", count: 120, slug: "vintage" },
-  { name: "Local Pickup", count: 600, slug: "local" },
-];
-
-// Animation variants
-const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: easeOut },
-  },
-};
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4 },
-  },
-};
-
-const hoverScale = {
-  hover: { scale: 1.05, transition: { duration: 0.2 } },
-  tap: { scale: 0.95 },
-};
+import { getProducts } from "@/api/product";
+import type { Product } from "@/types/product";
 
 function CategoriesPage() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.1 });
+  const [categories, setCategories] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedTags, setSelectedTags] = useState(new Set());
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+
+  // Hardcoded filter tags (since backend doesn't have condition field; can extend later)
+  const filterTags = [
+    { name: "New", count: 450, slug: "new" },
+    { name: "Used", count: 380, slug: "used" },
+    { name: "Vintage", count: 120, slug: "vintage" },
+    { name: "Local Pickup", count: 600, slug: "local" },
+  ];
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await getProducts(); // Fetch all products
+        const products = response.products || [];
+
+        // Compute unique categories with counts and featured items
+        const categoryMap = new Map();
+        products.forEach((product: Product) => {
+          const cat = product.category || "Uncategorized";
+          if (!categoryMap.has(cat)) {
+            categoryMap.set(cat, {
+              name: cat,
+              count: 0,
+              featuredItems: [],
+              slug: cat.toLowerCase().replace(/\s+/g, "-"),
+            });
+          }
+          const entry = categoryMap.get(cat);
+          entry.count += 1;
+          if (entry.featuredItems.length < 3) {
+            entry.featuredItems.push(product.name);
+          }
+        });
+
+        const computedCategories = Array.from(categoryMap.values()).map(
+          (cat) => ({
+            ...cat,
+            description: `${cat.name} items for every interest.`,
+            icon: "📦", // Generic icon; can map based on category if needed
+          })
+        );
+
+        setCategories(computedCategories);
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+        setCategories([]); // Fallback to empty
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   // Filter categories based on search and tags
   const filteredCategories = categories.filter((category) => {
@@ -135,28 +81,29 @@ function CategoriesPage() {
       category.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTag =
       selectedTags.size === 0 ||
-      selectedTags.has("new") ||
-      selectedTags.has("used") ||
-      selectedTags.has("vintage");
+      Array.from(selectedTags).some((tag: string) =>
+        category.name.toLowerCase().includes(tag.toLowerCase())
+      );
     return matchesSearch && matchesTag;
   });
 
-  // Reduced motion check
-  const shouldReduceMotion =
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading categories...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Hero Section */}
       <section className="relative py-12 md:py-20 lg:py-32 bg-gradient-to-br from-primary/10 to-muted/20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-16">
-          <motion.div
-            className="text-center max-w-4xl mx-auto"
-            initial="hidden"
-            animate={isInView ? "visible" : "hidden"}
-            variants={fadeInUp}
-          >
+          <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold bg-gradient-to-r from-foreground via-primary to-secondary bg-clip-text text-transparent mb-4 md:mb-6">
               Explore Categories
             </h1>
@@ -176,7 +123,7 @@ function CategoriesPage() {
                 />
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
@@ -204,13 +151,7 @@ function CategoriesPage() {
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-8">
             {/* Categories Grid */}
-            <motion.div
-              ref={ref}
-              className="lg:col-span-3 order-2 lg:order-1"
-              variants={staggerContainer}
-              initial="hidden"
-              animate={isInView ? "visible" : "hidden"}
-            >
+            <div className="lg:col-span-3 order-2 lg:order-1">
               {filteredCategories.length === 0 ? (
                 <div className="text-center py-12">
                   <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -221,12 +162,7 @@ function CategoriesPage() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {filteredCategories.map((category) => (
-                    <motion.div
-                      key={category.id}
-                      variants={itemVariants}
-                      whileHover={shouldReduceMotion ? {} : hoverScale}
-                      className="w-full"
-                    >
+                    <div key={category.name}>
                       <a href={`/categories/${category.slug}`}>
                         <Card className="h-full overflow-hidden border-border hover:border-primary/50 transition-colors group cursor-pointer w-full">
                           <div className="relative h-32 sm:h-48 bg-gradient-to-br from-muted to-muted-foreground/10 overflow-hidden">
@@ -250,7 +186,7 @@ function CategoriesPage() {
                             <div className="flex flex-wrap gap-1 mb-4">
                               {category.featuredItems
                                 .slice(0, 3)
-                                .map((item, index) => (
+                                .map((item: string, index: number) => (
                                   <Badge
                                     key={index}
                                     variant="outline"
@@ -267,19 +203,14 @@ function CategoriesPage() {
                           </CardContent>
                         </Card>
                       </a>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
               )}
-            </motion.div>
+            </div>
 
             {/* Sidebar Filters */}
-            <motion.aside
-              className="lg:col-span-1 order-1 lg:order-2 space-y-4 lg:space-y-6 w-full lg:w-auto"
-              variants={staggerContainer}
-              initial="hidden"
-              animate={isInView ? "visible" : "hidden"}
-            >
+            <aside className="lg:col-span-1 order-1 lg:order-2 space-y-4 lg:space-y-6 w-full lg:w-auto">
               {/* Tags Filter */}
               <Card className="w-full">
                 <CardHeader className="pb-4">
@@ -351,7 +282,7 @@ function CategoriesPage() {
                   </div>
                 </CardContent>
               </Card>
-            </motion.aside>
+            </aside>
           </div>
         </div>
       </section>
