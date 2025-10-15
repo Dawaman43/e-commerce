@@ -229,12 +229,31 @@ export const getProductsByCategory = async (req, res) => {
   }
 };
 
-/**
- * Search products by name or description
- */
 export const searchProducts = async (req, res) => {
   try {
-    // TODO: implement
+    const { q } = req.query;
+
+    if (!q) {
+      return res.status(400).json({ error: "Search query is required." });
+    }
+
+    const products = await Product.find({
+      $or: [
+        { name: { $regex: new RegExp(q, "i") } },
+        { description: { $regex: new RegExp(q, "i") } },
+      ],
+    }).populate("seller", "name email");
+
+    if (!products || products.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "No products found matching your query." });
+    }
+
+    return res.status(200).json({
+      message: `Products matching "${q}" fetched successfully`,
+      products,
+    });
   } catch (error) {
     console.error("Search products error:", error);
     res.status(500).json({ error: "Internal server error." });

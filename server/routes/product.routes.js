@@ -5,6 +5,7 @@ import {
   getProductById,
   getProducts,
   getProductsByCategory,
+  searchProducts,
   updateProduct,
 } from "../controllers/product.controller.js";
 import { requireAuth } from "../middlewares/auth.middleware.js";
@@ -17,6 +18,7 @@ const upload = multer({ storage });
 
 router.post("/", requireAuth, upload.array("images", 5), createProduct);
 router.get("/", getProducts);
+router.get("/search", searchProducts);
 router.get("/:id", getProductById);
 router.put("/:id", requireAuth, updateProduct);
 router.delete("/:id", requireAuth, deleteProduct);
