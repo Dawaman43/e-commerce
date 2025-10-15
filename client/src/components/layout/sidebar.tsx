@@ -1,6 +1,6 @@
 // components/layout/Sidebar.tsx
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, Menu, LogOut, HelpCircle } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
@@ -44,6 +44,7 @@ function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const role = user?.role || "user";
 
   // Toggle function for submenus
@@ -249,15 +250,15 @@ function Sidebar() {
         <Button
           variant={active ? "secondary" : "ghost"}
           className={cn(
-            "w-full justify-start transition-all duration-200 hover:bg-accent/50",
+            "w-full justify-start transition-all duration-200 hover:bg-accent/50 pr-2",
             level > 0 && "pl-8"
           )}
           onClick={(e) => {
             e.preventDefault();
-            if (hasChildren) {
+            if (hasChildren && !isCollapsed) {
               toggleSection(link.id);
             } else if (link.link) {
-              window.location.href = link.link; // Or use navigate if in React Router context
+              navigate(link.link);
             }
           }}
         >
@@ -286,7 +287,7 @@ function Sidebar() {
   return (
     <aside
       className={cn(
-        "fixed top-16 left-0 z-50 h-[calc(100vh-4rem)] bg-card border-r shadow-sm flex flex-col transition-all duration-300 ease-in-out",
+        "bg-card border-r shadow-sm flex flex-col transition-all duration-300 ease-in-out h-full",
         isCollapsed ? "w-20" : "w-64"
       )}
     >
@@ -309,7 +310,7 @@ function Sidebar() {
       </nav>
 
       {/* Footer Actions */}
-      <div className="p-4 border-t bg-card/50 space-y-2">
+      <div className="p-4 border-t bg-card/50 space-y-2 shrink-0">
         {user && (
           <>
             <Button

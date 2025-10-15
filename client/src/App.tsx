@@ -1,5 +1,7 @@
-import { Route, Routes, Navigate } from "react-router-dom";
+import { Route, Routes, Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/components/auth-provider";
+import type { JSX } from "react";
+
 import HomePage from "./pages/Home";
 import AuthPage from "./pages/Auth";
 import NotFoundPage from "./pages/NotFound";
@@ -25,53 +27,104 @@ import ProductPage from "./pages/Product";
 import SellerPage from "./pages/Seller";
 import OrderHistory from "./pages/OrderHistory";
 import AdminDashboard from "./pages/AdminDashboard";
+import UsersPage from "./pages/Users";
 import ModeratorDashboard from "./pages/ModeratorDashboard";
-import type { JSX } from "react";
 
-// Protected Route Component - requires authentication
+// ✅ Protected Route - waits for auth loading before redirecting
 function ProtectedRoute({ children }: { children: JSX.Element }) {
-  const { user } = useAuth();
-  return user ? children : <Navigate to="/auth" replace />;
-}
+  const { user, loading } = useAuth();
 
-// Role-based Route Component - requires specific role
-function RoleRoute({
-  children,
-  allowedRoles,
-}: {
-  children: JSX.Element;
-  allowedRoles: string[];
-}) {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/auth" replace />;
-  if (!allowedRoles.includes(user.role || ""))
-    return <Navigate to="/" replace />;
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
   return children;
 }
 
-// Auth Route Component - redirects if already authenticated
+// ✅ Role-based Route - only allows certain roles
+function RoleRoute({ allowedRoles }: { allowedRoles: string[] }) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (!allowedRoles.includes(user.role || "")) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <Outlet />;
+}
+
+// ✅ Auth Route - redirects logged-in users away from /auth
 function AuthRoute({ children }: { children: JSX.Element }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
   return user ? <Navigate to="/" replace /> : children;
 }
 
-// Home Route Wrapper - role-based redirect for authenticated users
+// ✅ Home Route Wrapper - redirects admin/moderator to dashboards
 function HomeWrapper({ children }: { children: JSX.Element }) {
-  const { user } = useAuth();
-  if (!user) return children; // Public access for unauthenticated
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (!user) return children; // Public access for unauthenticated users
 
   const role = user.role || "user";
   if (role === "moderator")
     return <Navigate to="/moderator/dashboard" replace />;
   if (role === "admin") return <Navigate to="/admin/dashboard" replace />;
 
-  return children; // Show home for "user" role
+  return children; // normal user -> home
 }
 
+// ✅ Main App Routes
 const App = () => {
+  const { loading } = useAuth();
+
+  // Optional: global loading screen during initial auth check
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <p>Loading session...</p>
+      </div>
+    );
+  }
+
   return (
     <Routes>
-      {/* Home Route - public for unauth, user-role only for auth */}
+      {/* Public Home */}
       <Route
         path="/"
         element={
@@ -81,7 +134,7 @@ const App = () => {
         }
       />
 
-      {/* Auth Route - protected from logged-in users */}
+      {/* Authentication */}
       <Route
         path="/auth"
         element={
@@ -91,7 +144,7 @@ const App = () => {
         }
       />
 
-      {/* Protected Routes - require login (user-level) */}
+      {/* User Protected Routes */}
       <Route
         path="/profile"
         element={
@@ -149,23 +202,21 @@ const App = () => {
         }
       />
 
-      {/* Role-Protected Dashboards */}
+      {/* Admin Routes */}
+      <Route path="/admin" element={<RoleRoute allowedRoles={["admin"]} />}>
+        <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="users" element={<UsersPage />} />
+        <Route index element={<Navigate to="dashboard" replace />} />
+      </Route>
+
+      {/* Moderator Routes */}
       <Route
-        path="/admin/dashboard"
-        element={
-          <RoleRoute allowedRoles={["admin"]}>
-            <AdminDashboard />
-          </RoleRoute>
-        }
-      />
-      <Route
-        path="/moderator/dashboard"
-        element={
-          <RoleRoute allowedRoles={["moderator"]}>
-            <ModeratorDashboard />
-          </RoleRoute>
-        }
-      />
+        path="/moderator"
+        element={<RoleRoute allowedRoles={["moderator"]} />}
+      >
+        <Route path="dashboard" element={<ModeratorDashboard />} />
+        <Route index element={<Navigate to="dashboard" replace />} />
+      </Route>
 
       {/* Public Static Pages */}
       <Route path="/about" element={<AboutUsPage />} />
@@ -181,11 +232,11 @@ const App = () => {
       <Route path="/sellers" element={<SellersPage />} />
       <Route path="/categories" element={<CategoriesPage />} />
 
-      {/* Public Dynamic Routes */}
+      {/* Public Dynamic Pages */}
       <Route path="/product/:id" element={<ProductPage />} />
       <Route path="/seller/:id" element={<SellerPage />} />
 
-      {/* Catch-all for 404 */}
+      {/* 404 Page */}
       <Route path="/*" element={<NotFoundPage />} />
     </Routes>
   );

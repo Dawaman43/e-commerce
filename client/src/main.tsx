@@ -16,10 +16,16 @@ createRoot(document.getElementById("root")!).render(
       <AuthProvider>
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
           <Toaster richColors position="top-right" />
-          <Header />
-          <Sidebar />
-          <App />
-          <Footer />
+          <div className="flex flex-col min-h-screen">
+            <Header />
+            <div className="flex flex-1">
+              <Sidebar />
+              <main className="flex-1 transition-all duration-300 ease-in-out">
+                <App />
+              </main>
+            </div>
+            <Footer />
+          </div>
         </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>
