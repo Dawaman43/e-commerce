@@ -3,6 +3,7 @@ import {
   createProduct,
   getProductById,
   getProducts,
+  updateProduct,
 } from "../controllers/product.controller.js";
 import { requireAuth } from "../middlewares/auth.middleware.js";
 import multer from "multer";
@@ -15,4 +16,6 @@ const upload = multer({ storage });
 router.post("/", requireAuth, upload.array("images", 5), createProduct);
 router.get("/", getProducts);
 router.get("/:id", getProductById);
+router.put("/:id", requireAuth, updateProduct);
+
 export default router;

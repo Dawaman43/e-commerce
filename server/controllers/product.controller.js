@@ -133,13 +133,40 @@ export const getProductById = async (req, res) => {
   }
 };
 
-/**
- * Update a product
- * Only the seller of the product can update
- */
 export const updateProduct = async (req, res) => {
   try {
-    // TODO: implement
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: "Product ID is required." });
+    }
+
+    const product = await Product.findById(id);
+    if (!product) {
+      return res.status(404).json({ error: "Product not found." });
+    }
+
+    if (!req.user || product.seller.toString() !== req.user._id.toString()) {
+      return res
+        .status(403)
+        .json({ error: "Not authorized to update this product." });
+    }
+
+    const { name, description, category, price, stock, images } = req.body;
+
+    if (name) product.name = name;
+    if (description) product.description = description;
+    if (category) product.category = category;
+    if (price !== undefined) product.price = price;
+    if (stock !== undefined) product.stock = stock;
+    if (images && Array.isArray(images)) product.images = images;
+
+    const updatedProduct = await product.save();
+
+    return res.status(200).json({
+      message: "Product updated successfully",
+      product: updatedProduct,
+    });
   } catch (error) {
     console.error("Update product error:", error);
     res.status(500).json({ error: "Internal server error." });
