@@ -282,6 +282,8 @@ function Sidebar({ className, isCollapsed, onToggle }: SidebarProps) {
               navigate(link.link);
             }
           }}
+          aria-expanded={hasChildren && !isCollapsed ? isOpen : undefined}
+          aria-haspopup={hasChildren && !isCollapsed ? "true" : undefined}
         >
           <Icon className="mr-2 h-4 w-4 flex-shrink-0" />
           {!isCollapsed && (
@@ -297,7 +299,7 @@ function Sidebar({ className, isCollapsed, onToggle }: SidebarProps) {
           )}
         </Button>
         {hasChildren && isOpen && !isCollapsed && (
-          <div className="space-y-1 ml-4">
+          <div className="space-y-1 ml-4" role="group">
             {link.children!.map((child) => renderNavLink(child, level + 1))}
           </div>
         )}
@@ -314,7 +316,7 @@ function Sidebar({ className, isCollapsed, onToggle }: SidebarProps) {
       )}
     >
       {/* Header - No logo */}
-      <div className="flex items-center justify-between p-4 border-b bg-card/50">
+      <div className="flex items-center justify-between p-4 border-b bg-card/50 flex-shrink-0">
         <div className="flex-1" /> {/* Empty space for alignment */}
         <Button
           variant="ghost"
@@ -326,13 +328,21 @@ function Sidebar({ className, isCollapsed, onToggle }: SidebarProps) {
         </Button>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+      {/* Scrollable Navigation */}
+      <nav
+        role="navigation"
+        aria-label="Main navigation"
+        className="flex-1 min-h-0 max-h-full overflow-y-auto p-4 space-y-2"
+        style={{
+          WebkitOverflowScrolling: "touch",
+          scrollBehavior: "smooth",
+        }}
+      >
         {navLinks.map((nav) => renderNavLink(nav))}
       </nav>
 
-      {/* Footer Actions */}
-      <div className="p-4 border-t bg-card/50 space-y-2">
+      {/* Footer Actions - Fixed at bottom */}
+      <div className="p-4 border-t bg-card/50 space-y-2 flex-shrink-0">
         {user && (
           <>
             <Button
@@ -343,7 +353,7 @@ function Sidebar({ className, isCollapsed, onToggle }: SidebarProps) {
               )}
               onClick={logout}
             >
-              <LogOut className="h-4 w-4 flex-shrink-0" />
+              <LogOut className="h-4 w-4 flex-shrink-0 mr-2" />
               {!isCollapsed && <span>Logout</span>}
             </Button>
             <Separator />
@@ -357,7 +367,7 @@ function Sidebar({ className, isCollapsed, onToggle }: SidebarProps) {
           )}
           onClick={() => window.open("/help", "_blank")}
         >
-          <HelpCircle className="h-4 w-4 flex-shrink-0" />
+          <HelpCircle className="h-4 w-4 flex-shrink-0 mr-2" />
           {!isCollapsed && <span>Help</span>}
         </Button>
       </div>

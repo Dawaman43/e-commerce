@@ -3,6 +3,7 @@ import {
   addUsers,
   banUser,
   deleteUser,
+  getUsers,
   registerAdmin,
 } from "../controllers/admin.controller.js";
 import { requireAdmin, requireAuth } from "../middlewares/auth.middleware.js";
@@ -13,5 +14,6 @@ router.post("/register", registerAdmin);
 router.post("/add-users", requireAuth, requireAdmin, addUsers);
 router.delete("/:id", requireAuth, requireAdmin, deleteUser);
 router.patch("/ban/:id", requireAuth, requireAdmin, banUser);
+router.get("/", requireAuth, requireAdmin, getUsers);
 
 export default router;

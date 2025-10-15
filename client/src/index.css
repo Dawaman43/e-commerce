@@ -128,3 +128,17 @@ html {
   -ms-overflow-style: none; /* IE & Edge */
   scrollbar-width: none; /* Firefox */
 }
+/* Optional: Stylish thin scrollbar for WebKit browsers */
+aside::-webkit-scrollbar {
+  width: 6px;
+}
+aside::-webkit-scrollbar-track {
+  background: transparent;
+}
+aside::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 3px;
+}
+aside::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}

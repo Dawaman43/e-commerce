@@ -139,3 +139,33 @@ export const banUser = async (req, res) => {
     return res.status(500).json({ error: "Internal server error." });
   }
 };
+
+export const getUsers = async (req, res) => {
+  try {
+    const { role, isBanned, limit = 20, page = 1 } = req.query;
+
+    const filter = {};
+
+    if (role) filter.role = role;
+    if (isBanned !== undefined) filter.isBanned = isBanned === "true";
+
+    const users = await User.find()
+      .select("-passwordHash")
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .sort({ createdAt: -1 });
+
+    const total = await User.countDocuments(filter);
+
+    return res.status(200).json({
+      message: "Users fetched successfully",
+      page: Number(page),
+      totalPages: Math.ceil(total / limit),
+      totalUsers: total,
+      users,
+    });
+  } catch (error) {
+    console.log("Users get error: ", error);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};
