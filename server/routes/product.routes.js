@@ -3,7 +3,9 @@ import {
   addReview,
   createProduct,
   deleteProduct,
+  deleteReview,
   getProductById,
+  getProductReviews,
   getProducts,
   getProductsByCategory,
   getProductsBySeller,
@@ -32,5 +34,7 @@ router.get("/seller/:sellerId", getProductsBySeller);
 router.get("/category/:category", getProductsByCategory);
 router.post("/:productId/reviews", requireAuth, addReview);
 router.put("/:productId/reviews/:reviewId", requireAuth, updateReview);
+router.delete("/:productId/reviews/:reviewId", requireAuth, deleteReview);
+router.get("/:productId/reviews", getProductReviews);
 
 export default router;

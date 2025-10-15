@@ -419,24 +419,82 @@ export const updateReview = async (req, res) => {
   }
 };
 
-/**
- * Delete a review
- */
 export const deleteReview = async (req, res) => {
   try {
-    // TODO: implement
+    const { productId, reviewId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ error: "Invalid product ID." });
+    }
+    if (!mongoose.Types.ObjectId.isValid(reviewId)) {
+      return res.status(400).json({ error: "Invalid review ID." });
+    }
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ error: "Product not found." });
+    }
+
+    const review = product.reviews.find((r) => r._id.toString() === reviewId);
+    if (!review) {
+      return res.status(404).json({ error: "Review not found." });
+    }
+
+    if (review.user.toString() !== req.user._id.toString()) {
+      return res
+        .status(403)
+        .json({ error: "You can only delete your own reviews." });
+    }
+
+    // ✅ Remove review by filtering
+    product.reviews = product.reviews.filter(
+      (r) => r._id.toString() !== reviewId
+    );
+
+    // Recalculate average rating
+    if (product.reviews.length > 0) {
+      const totalRating = product.reviews.reduce((sum, r) => sum + r.rating, 0);
+      product.rating = totalRating / product.reviews.length;
+    } else {
+      product.rating = 0;
+    }
+
+    await product.save();
+    await product.populate("reviews.user", "name email");
+
+    return res.status(200).json({
+      message: "Review deleted successfully",
+      product,
+    });
   } catch (error) {
     console.error("Delete review error:", error);
     res.status(500).json({ error: "Internal server error." });
   }
 };
 
-/**
- * Get all reviews for a product
- */
 export const getProductReviews = async (req, res) => {
   try {
-    // TODO: implement
+    const { productId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ error: "Invalid product ID." });
+    }
+
+    const product = await Product.findById(productId).populate(
+      "reviews.user",
+      "name email"
+    );
+
+    if (!product) {
+      return res.status(404).json({ error: "Product not found." });
+    }
+
+    return res.status(200).json({
+      message: `Reviews for product "${product.name}" fetched successfully`,
+      reviews: product.reviews,
+      averageRating: product.rating,
+      totalReviews: product.reviews.length,
+    });
   } catch (error) {
     console.error("Get product reviews error:", error);
     res.status(500).json({ error: "Internal server error." });
