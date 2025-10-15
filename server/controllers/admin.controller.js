@@ -102,3 +102,40 @@ export const deleteUser = async (req, res) => {
     return res.status(500).json({ error: "Internal server error." });
   }
 };
+
+export const banUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { ban } = req.body;
+
+    if (!id) {
+      return res.status(400).json({ error: "User id must be provided" });
+    }
+
+    if (typeof ban !== "boolean")
+      return res.status(400).json({ error: "Ban field must be true or false" });
+
+    const user = await User.findById(id);
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    if (user.role === "admin")
+      return res.status(403).json({ error: "Cannot ban an admin" });
+
+    user.isBanned = ban;
+    await user.save();
+
+    return res.status(200).json({
+      message: `User has been ${ban ? "banned" : "unbanned"} successfully`,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isBanned: user.isBanned,
+      },
+    });
+  } catch (error) {
+    console.log("User ban error: ", error);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};
