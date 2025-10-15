@@ -1,3 +1,4 @@
+// Updated product.ts with logs in updateProduct
 // client/src/api/product.ts
 import { BACKEND_API_URL } from "@/configs/api";
 import type {
@@ -74,23 +75,57 @@ export const getProductById = async (id: string): Promise<ProductResponse> => {
 /** Update a product */
 export const updateProduct = async (
   id: string,
-  data: UpdateProductPayload
+  data: UpdateProductPayload | FormData
 ): Promise<ProductResponse> => {
-  const formData = new FormData();
-  if (data.name) formData.append("name", data.name);
-  if (data.description) formData.append("description", data.description);
-  if (data.category) formData.append("category", data.category);
-  if (data.price !== undefined) formData.append("price", data.price);
-  if (data.stock) formData.append("stock", data.stock);
-  if (data.images) {
-    data.images.forEach((file) => formData.append("images", file));
+  let body: BodyInit;
+  let headers: Record<string, string> | undefined;
+
+  if (data instanceof FormData) {
+    body = data;
+    // ✅ Explicitly set headers WITHOUT Content-Type (let browser auto-set multipart/form-data)
+    headers = {}; // Empty object to override default JSON header
+    console.log("=== API UPDATE DEBUG: Using FormData ===");
+    console.log("Body is FormData:", body instanceof FormData);
+    console.log("Headers passed:", headers);
+    console.log("FormData entries in API:");
+    for (const [key, value] of (body as FormData).entries()) {
+      console.log(`${key}:`, value);
+      if (value instanceof File) {
+        console.log(`  - File size: ${value.size} bytes, type: ${value.type}`);
+      }
+    }
+  } else {
+    // Fallback for non-FormData (though not used here)
+    body = JSON.stringify(data);
+    headers = { "Content-Type": "application/json" };
+    console.log("=== API UPDATE DEBUG: Using JSON ===");
+    console.log("Body (JSON):", body);
+    console.log("Headers passed:", headers);
   }
 
+  console.log("Full request options before fetchClient:");
+  console.log("- Method: PUT");
+  console.log("- URL:", `${BASE_URL}/${id}`);
+  console.log("- Body type:", typeof body);
+  console.log("- Headers:", headers);
+  console.log("=========================================");
+
   const response = await fetchClient(`${BASE_URL}/${id}`, {
-    credentials: "include",
     method: "PUT",
-    body: formData,
+    credentials: "include",
+    body,
+    headers, // This overrides defaultOptions' JSON header
   });
+
+  console.log("=== API UPDATE RESPONSE DEBUG ===");
+  console.log("Response status:", response.status); // Assuming fetchClient returns a response-like object
+  console.log("Response ok:", response.ok);
+  if (response.ok) {
+    const json = await response.json(); // Assuming it has .json()
+    console.log("Response body:", json);
+  }
+  console.log("=================================");
+
   return response;
 };
 

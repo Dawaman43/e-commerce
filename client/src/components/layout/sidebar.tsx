@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Menu, LogOut, HelpCircle } from "lucide-react";
+import { ChevronDown, Menu, LogOut, HelpCircle, Edit } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { cn } from "@/lib/utils";
 import {
@@ -96,20 +96,21 @@ function Sidebar({ className, isCollapsed, onToggle }: SidebarProps) {
       { id: 3, name: "Sell", link: "/sell", icon: ShoppingBag },
       { id: 4, name: "My Orders", link: "/dashboard/orders", icon: Package },
       { id: 5, name: "Profile", link: "/profile", icon: UserIcon },
+      { id: 6, name: "Edit Product", link: "/edit-product", icon: Edit },
       {
-        id: 6,
+        id: 7,
         name: "Account",
         link: "/account",
         icon: Settings,
         children: [
           {
-            id: 61,
+            id: 71,
             name: "Profile Settings",
             link: "/profile",
             icon: UserIcon,
           },
-          { id: 62, name: "Security", link: "/security", icon: Shield },
-          { id: 63, name: "Billing", link: "/billing", icon: DollarSign },
+          { id: 72, name: "Security", link: "/security", icon: Shield },
+          { id: 73, name: "Billing", link: "/billing", icon: DollarSign },
         ],
       },
     ];

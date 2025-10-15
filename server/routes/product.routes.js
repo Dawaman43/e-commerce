@@ -38,7 +38,7 @@ router.get("/seller/top", getTopSellers);
 
 // Product routes
 router.get("/:id", getProductById);
-router.put("/:id", requireAuth, updateProduct);
+router.put("/:id", requireAuth, upload.array("images", 5), updateProduct);
 router.delete("/:id", requireAuth, deleteProduct);
 
 // Category

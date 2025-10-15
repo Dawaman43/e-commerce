@@ -138,42 +138,93 @@ export const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
 
-    if (!id) {
-      return res.status(400).json({ error: "Product ID is required." });
+    // ADD THESE LOGS BEFORE DESTRUCTURING TO DIAGNOSE
+    console.log("=== UPDATE PRODUCT DEBUG ===");
+    console.log("Method:", req.method);
+    console.log("Path:", req.path);
+    console.log("Content-Type header:", req.headers["content-type"]);
+    console.log("req.body (before destructuring):", req.body);
+    console.log("req.files (before processing):", req.files);
+    console.log("Full req.body type:", typeof req.body);
+    console.log("Is req.body an object?", typeof req.body === "object");
+    console.log("============================");
+
+    // Multer parses multipart/form-data; all text fields are strings
+    const { name, description, category, price, stock, existingImages } =
+      req.body || {}; // ADD FALLBACK: || {} to prevent destructuring error if undefined
+
+    console.log("REQ.BODY after destructuring:", req.body); // Debug
+    console.log("REQ.FILES after destructuring:", req.files); // Debug
+
+    // Parse existingImages (may come as JSON string)
+    let parsedExistingImages = [];
+    if (existingImages) {
+      try {
+        parsedExistingImages = JSON.parse(existingImages);
+        console.log("Parsed existingImages:", parsedExistingImages);
+      } catch (parseErr) {
+        console.error("Parse existingImages error:", parseErr);
+        parsedExistingImages = Array.isArray(existingImages)
+          ? existingImages
+          : [existingImages];
+      }
+    } else {
+      console.log("No existingImages provided");
     }
 
-    const product = await Product.findById(id);
-    if (!product) {
-      return res.status(404).json({ error: "Product not found." });
+    // Upload new images to Cloudinary
+    let uploadedImages = [];
+    if (req.files && req.files.length > 0) {
+      console.log("Uploading new images:", req.files.length);
+      uploadedImages = await Promise.all(
+        req.files.map(
+          (file) =>
+            new Promise((resolve, reject) => {
+              const stream = cloudinary.uploader.upload_stream(
+                { folder: "products" },
+                (error, result) => {
+                  if (error) return reject(error);
+                  resolve(result.secure_url);
+                }
+              );
+              stream.end(file.buffer);
+            })
+        )
+      );
+      console.log("Uploaded new images URLs:", uploadedImages);
+    } else {
+      console.log("No new files to upload");
     }
 
-    if (!req.user || product.seller.toString() !== req.user._id.toString()) {
-      return res
-        .status(403)
-        .json({ error: "Not authorized to update this product." });
-    }
+    // Build update object
+    const updatedFields = {
+      images: [...parsedExistingImages, ...uploadedImages],
+    };
+    if (name) updatedFields.name = name;
+    if (description) updatedFields.description = description;
+    if (category) updatedFields.category = category;
+    if (price !== undefined) updatedFields.price = Number(price);
+    if (stock !== undefined) updatedFields.stock = Number(stock);
 
-    const { name, description, category, price, stock, images } = req.body;
+    console.log("Updated fields to apply:", updatedFields);
 
-    if (name) product.name = name;
-    if (description) product.description = description;
-    if (category) product.category = category;
-    if (price !== undefined) product.price = price;
-    if (stock !== undefined) product.stock = stock;
-    if (images && Array.isArray(images)) product.images = images;
-
-    const updatedProduct = await product.save();
-
-    return res.status(200).json({
-      message: "Product updated successfully",
-      product: updatedProduct,
+    // Update product in DB
+    const updatedProduct = await Product.findByIdAndUpdate(id, updatedFields, {
+      new: true,
     });
+
+    if (!updatedProduct) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    console.log("Product updated successfully:", updatedProduct._id);
+
+    res.status(200).json({ success: true, product: updatedProduct });
   } catch (error) {
     console.error("Update product error:", error);
-    res.status(500).json({ error: "Internal server error." });
+    res.status(500).json({ error: error.message });
   }
 };
-
 export const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;

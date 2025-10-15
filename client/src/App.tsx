@@ -28,6 +28,7 @@ import OrderHistory from "./pages/OrderHistory";
 import AdminDashboard from "./pages/AdminDashboard";
 import UsersPage from "./pages/Users";
 import ModeratorDashboard from "./pages/ModeratorDashboard";
+import EditProductPage from "./pages/EditProduct";
 
 interface AppProps {
   className?: string;
@@ -154,6 +155,14 @@ const App = ({ className }: AppProps) => {
           element={
             <ProtectedRoute>
               <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/edit-product"
+          element={
+            <ProtectedRoute>
+              <EditProductPage />
             </ProtectedRoute>
           }
         />

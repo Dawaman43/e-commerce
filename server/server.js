@@ -12,7 +12,11 @@ import { connectDB } from "./configs/db.js";
 
 const app = express();
 const port = process.env.PORT || 5000;
+
+// ✅ Connect to DB
 connectDB();
+
+// ✅ CORS setup
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -20,15 +24,30 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
+app.use((req, res, next) => {
+  // Skip JSON parsing for product uploads (multipart/form-data)
+  if (
+    req.path.startsWith("/api/products") &&
+    (req.method === "POST" || req.method === "PUT")
+  ) {
+    return next();
+  }
+  express.json({ limit: "50mb" })(req, res, () => {
+    express.urlencoded({ limit: "50mb", extended: true })(req, res, next);
+  });
+});
 
+// ✅ Routes
 app.use("/api/user", userRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/email-auth", authRoutes);
 app.use("/api/otp", otpRoutes);
 app.use("/api/products", productRoutes);
+
+// ✅ Better-auth handler
 app.all("/api/auth/*splat", toNodeHandler(auth));
 
+// ✅ Server listen
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  console.log(`✅ Server is running on port ${port}`);
 });

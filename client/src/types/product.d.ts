@@ -57,6 +57,7 @@ export interface UpdateProductPayload {
   price?: string;
   stock?: string;
   images?: File[];
+  existingImages?: string[];
 }
 
 export interface AddReviewPayload {
