@@ -12,17 +12,30 @@ const defaultOptions: RequestInit = {
 
 export const getCurrentUser = async (): Promise<{ user: User }> => {
   try {
-    return await fetchClient(`${BASE_URL}/me`, { credentials: "include" });
+    console.log("Fetching current user with credentials...");
+    const response = await fetchClient(`${BASE_URL}/me`, {
+      credentials: "include",
+    });
+    console.log("Response from /me with credentials:", response);
+    return response;
   } catch (err) {
-    const token = localStorage.getItem("token");
-    if (!token) throw new Error("User is not authenticated");
+    console.warn("Failed to fetch with credentials:", err);
 
-    return await fetchClient(`${BASE_URL}/me`, {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("No token found. User is not authenticated.");
+      throw new Error("User is not authenticated");
+    }
+
+    console.log("Fetching current user with Bearer token...");
+    const response = await fetchClient(`${BASE_URL}/me`, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
     });
+    console.log("Response from /me with token:", response);
+    return response;
   }
 };
 

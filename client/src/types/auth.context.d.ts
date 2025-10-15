@@ -6,4 +6,5 @@ export interface AuthContextType {
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
+  updateUser: (updates: Partial<AuthSession>) => Promise<void>; // Added for avatar updates and other profile changes
 }

@@ -8,6 +8,7 @@ import Header from "./components/header/header.tsx";
 import { AuthProvider } from "./components/auth-provider.tsx";
 import { Toaster } from "sonner";
 import Footer from "./components/layout/footer.tsx";
+import Sidebar from "./components/layout/sidebar.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -16,6 +17,7 @@ createRoot(document.getElementById("root")!).render(
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
           <Toaster richColors position="top-right" />
           <Header />
+          <Sidebar />
           <App />
           <Footer />
         </ThemeProvider>

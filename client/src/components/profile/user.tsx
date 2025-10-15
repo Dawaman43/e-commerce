@@ -57,6 +57,7 @@ interface EnhancedUser extends User {
   linkedin?: string;
   github?: string;
   birthDate?: string;
+  image?: string;
 }
 
 // Updated Ethiopian regions and major cities (as of 2025)

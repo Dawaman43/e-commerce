@@ -1,3 +1,4 @@
+// auth.ts - Full updated version with cache invalidation
 import { authClient } from "./authClient";
 import { BACKEND_API_URL, FRONTEND_API_URL } from "@/configs/api";
 
@@ -19,7 +20,7 @@ export const signInWithGoogle = async () => {
   try {
     await authClient.signIn.social({
       provider: "google",
-      callbackURL: `${BACKEND_API_URL}/api/auth/google/callback`,
+      callbackURL: `${FRONTEND_API_URL}`,
       errorCallbackURL: `${FRONTEND_API_URL}/error`,
       disableRedirect: false,
     });
@@ -33,13 +34,20 @@ export const signInWithGoogle = async () => {
 /* =========================================================
    🔹 Get Session (BetterAuth or Token Fallback)
 ========================================================= */
-export const getSession = async () => {
-  console.log("🔍 [auth.ts] getSession called");
+export const getSession = async (opts?: { disableCookieCache?: boolean }) => {
+  console.log(
+    "🔍 [auth.ts] getSession called",
+    opts ? "(with cache invalidation)" : ""
+  );
 
   try {
     // Try BetterAuth session
     console.log("🔍 [auth.ts] Attempting BetterAuth session...");
-    const session = await authClient.getSession();
+    const session = await authClient.getSession(
+      opts?.disableCookieCache
+        ? { query: { disableCookieCache: true } }
+        : undefined
+    );
 
     console.log(
       "🔍 [auth.ts] BetterAuth session:",
@@ -178,6 +186,19 @@ export const getCurrentUser = async () => {
     return userData; // Expected shape: { success: true, user: {...} }
   } catch (err) {
     console.error("🔴 [auth.ts] Failed to get current user:", err);
+    return null;
+  }
+};
+
+export const refreshBetterAuthSession = async () => {
+  try {
+    console.log("🔄 [auth.ts] Forcing BetterAuth session refresh...");
+    // This invalidates client-side cache AND fetches fresh data from server
+    const session = await authClient.session.refresh();
+    console.log("🟢 [auth.ts] Session refreshed:", session?.data?.user);
+    return session;
+  } catch (err) {
+    console.error("🔴 [auth.ts] BetterAuth session refresh failed:", err);
     return null;
   }
 };

@@ -21,8 +21,9 @@ export default function NavBar({ links }: NavBarProps) {
   const location = useLocation();
 
   return (
-    <NavigationMenu>
-      <NavigationMenuList className="flex space-x-8">
+    <NavigationMenu className="relative">
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-background/80 to-transparent" />
+      <NavigationMenuList className="relative flex space-x-8 backdrop-blur-sm">
         {links.map((nav) => {
           const isActive =
             location.pathname === nav.link ||
@@ -33,16 +34,19 @@ export default function NavBar({ links }: NavBarProps) {
                 <Link
                   to={nav.link}
                   className={cn(
-                    "group relative inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium transition-all duration-300 ease-out hover:bg-accent/50 hover:text-accent-foreground focus:bg-accent/50 focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]]:bg-accent/50",
-                    isActive &&
-                      "bg-accent/70 text-accent-foreground border-b-2 border-primary"
+                    "group relative inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium uppercase tracking-wide transition-all duration-300 ease-out hover:bg-accent/20 hover:text-accent-foreground focus:bg-accent/20 focus:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+                    isActive && "text-primary shadow-lg shadow-primary/10"
                   )}
                 >
                   <span className="relative z-10">{nav.name}</span>
-                  <span className="absolute inset-0 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-primary/10 via-accent/10 to-secondary/10" />
-                  {isActive && (
-                    <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-primary rounded-full scale-75" />
-                  )}
+                  <span className="absolute inset-0 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-primary/5 via-accent/5 to-secondary/5" />
+                  <span
+                    className={cn(
+                      "absolute bottom-0 left-0 h-0.5 bg-primary transition-all duration-300 ease-out origin-left scale-x-0",
+                      "group-hover:scale-x-100",
+                      isActive && "scale-x-100"
+                    )}
+                  />
                 </Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
