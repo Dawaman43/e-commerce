@@ -621,3 +621,99 @@ export const calculateProductRating = async (productId) => {
     return 0;
   }
 };
+
+export const getSeller = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "Invalid seller ID." });
+    }
+
+    const seller = await User.findById(id).select(
+      "-passwordHash -authId" // exclude sensitive fields
+    );
+
+    if (!seller) {
+      return res.status(404).json({ error: "Seller not found." });
+    }
+
+    // Fetch products by this seller
+    const products = await Product.find({ seller: id });
+
+    return res.status(200).json({
+      message: "Seller fetched successfully",
+      seller,
+      products, // include seller's products
+    });
+  } catch (error) {
+    console.error("Get seller error:", error);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+export const getTopSellers = async (req, res) => {
+  try {
+    const topSellers = await Product.aggregate([
+      {
+        $group: {
+          _id: "$seller",
+          productCount: { $sum: 1 },
+          averageRating: { $avg: "$rating" },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "seller",
+        },
+      },
+      { $unwind: "$seller" },
+      {
+        $lookup: {
+          from: "reviews",
+          let: { sellerId: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$user", "$$sellerId"] } } },
+            { $count: "count" },
+          ],
+          as: "reviewCount",
+        },
+      },
+      { $sort: { productCount: -1, averageRating: -1 } },
+      { $limit: 5 },
+      {
+        $project: {
+          _id: 0,
+          id: "$seller._id",
+          name: "$seller.name",
+          email: "$seller.email",
+          avatar: "$seller.image", // <-- user profile image
+          bio: "$seller.bio",
+          location: "$seller.location",
+          verified: "$seller.isVerified",
+          sales: "$productCount",
+          rating: "$averageRating",
+          reviews: { $arrayElemAt: ["$reviewCount.count", 0] },
+        },
+      },
+    ]);
+
+    return res.status(200).json({
+      message: "Top sellers fetched successfully",
+      sellers: topSellers.map((s) => ({
+        ...s,
+        reviews: s.reviews || 0,
+        avatar: s.avatar || "/default-avatar.png", // default image
+        bio: s.bio || "",
+        location: s.location || "Unknown",
+        verified: s.verified || false,
+      })),
+    });
+  } catch (error) {
+    console.error("Get top sellers error:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};
