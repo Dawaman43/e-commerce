@@ -2,6 +2,7 @@ import express from "express";
 import {
   addReview,
   createProduct,
+  decrementProductStock,
   deleteProduct,
   deleteReview,
   getProductById,
@@ -10,6 +11,7 @@ import {
   getProductsByCategory,
   getProductsBySeller,
   getTopRatedProducts,
+  incrementProductStock,
   searchProducts,
   updateProduct,
   updateReview,
@@ -36,5 +38,7 @@ router.post("/:productId/reviews", requireAuth, addReview);
 router.put("/:productId/reviews/:reviewId", requireAuth, updateReview);
 router.delete("/:productId/reviews/:reviewId", requireAuth, deleteReview);
 router.get("/:productId/reviews", getProductReviews);
+router.patch("/:productId/stock", requireAuth, incrementProductStock);
+router.patch("/:productId/stock/decrement", requireAuth, decrementProductStock);
 
 export default router;
