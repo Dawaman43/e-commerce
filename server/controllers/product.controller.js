@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import cloudinary from "../libs/cloudinary.js";
 import { Product } from "../models/product.model.js";
 
@@ -260,36 +261,94 @@ export const searchProducts = async (req, res) => {
   }
 };
 
-/**
- * Get all products from a specific seller
- */
 export const getProductsBySeller = async (req, res) => {
   try {
-    // TODO: implement
+    const { sellerId } = req.params;
+
+    if (!sellerId || !mongoose.Types.ObjectId.isValid(sellerId)) {
+      return res.status(400).json({ error: "Invalid seller ID." });
+    }
+
+    const products = await Product.find({ seller: sellerId }).populate(
+      "seller",
+      "name email"
+    );
+
+    if (!products || products.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "No products found for this seller." });
+    }
+
+    return res.status(200).json({
+      message: "Products fetched successfully for this seller",
+      products,
+    });
   } catch (error) {
     console.error("Get products by seller error:", error);
     res.status(500).json({ error: "Internal server error." });
   }
 };
 
-/**
- * Get top-rated products
- */
 export const getTopRatedProducts = async (req, res) => {
   try {
-    // TODO: implement
+    const limit = parseInt(req.query.limit) || 10;
+
+    const products = await Product.find()
+      .sort({ rating: -1 })
+      .limit(limit)
+      .populate("seller", "name email");
+
+    if (!products || products.length === 0) {
+      return res.status(404).json({ error: "No top-rated products found." });
+    }
+
+    return res.status(200).json({
+      message: "Top-rated products fetched successfully",
+      products,
+    });
   } catch (error) {
     console.error("Get top-rated products error:", error);
     res.status(500).json({ error: "Internal server error." });
   }
 };
 
-/**
- * Add a review to a product
- */
 export const addReview = async (req, res) => {
   try {
-    // TODO: implement
+    const { productId } = req.params;
+    const { comment, rating } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ error: "Invalid product ID." });
+    }
+
+    if (!rating || rating < 0 || rating > 5) {
+      return res.status(400).json({ error: "Rating must be between 0 and 5." });
+    }
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ error: "Product not found." });
+    }
+
+    const review = {
+      user: req.user._id,
+      comment: comment || "",
+      rating,
+    };
+    product.reviews.push(review);
+
+    const totalRating = product.reviews.reduce((sum, r) => sum + r.rating, 0);
+    product.rating = totalRating / product.reviews.length;
+
+    await product.save();
+
+    await product.populate("reviews.user", "name email");
+
+    return res.status(201).json({
+      message: "Review added successfully",
+      product,
+    });
   } catch (error) {
     console.error("Add review error:", error);
     res.status(500).json({ error: "Internal server error." });
