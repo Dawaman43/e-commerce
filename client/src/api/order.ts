@@ -1,0 +1,137 @@
+import { BACKEND_API_URL } from "@/configs/api";
+import type {
+  Order,
+  OrdersResponse,
+  OrderResponse,
+  CreateOrderPayload,
+} from "@/types/order";
+import { fetchClient } from "@/utils/fetchClient";
+
+const BASE_URL = `${BACKEND_API_URL}/api/orders`;
+
+const defaultOptions: RequestInit = {
+  credentials: "include",
+  headers: { "Content-Type": "application/json" },
+};
+
+export const createOrder = async (
+  data: CreateOrderPayload
+): Promise<OrderResponse> => {
+  const response = await fetchClient(`${BASE_URL}/`, {
+    ...defaultOptions,
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return response;
+};
+
+export const getOrders = async (
+  query?: Record<string, any>
+): Promise<OrdersResponse> => {
+  let queryString = "";
+  if (query) {
+    const filteredQuery = Object.entries(query).reduce((acc, [key, value]) => {
+      const valStr = String(value).trim();
+      if (valStr && valStr !== "undefined") {
+        acc[key] = valStr;
+      }
+      return acc;
+    }, {} as Record<string, any>);
+    if (Object.keys(filteredQuery).length > 0) {
+      queryString =
+        "?" +
+        Object.entries(filteredQuery)
+          .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+          .join("&");
+    }
+  }
+  const response = await fetchClient(`${BASE_URL}${queryString}`, {
+    ...defaultOptions,
+    method: "GET",
+  });
+  return response;
+};
+
+export const getOrderById = async (id: string): Promise<OrderResponse> => {
+  const response = await fetchClient(`${BASE_URL}/${id}`, {
+    ...defaultOptions,
+    method: "GET",
+  });
+  return response;
+};
+
+export const getOrdersByBuyer = async (
+  buyerId: string
+): Promise<OrdersResponse> => {
+  const response = await fetchClient(`${BASE_URL}/buyer/${buyerId}`, {
+    ...defaultOptions,
+    method: "GET",
+  });
+  return response;
+};
+
+export const getOrdersBySeller = async (
+  sellerId: string
+): Promise<OrdersResponse> => {
+  const response = await fetchClient(`${BASE_URL}/seller/${sellerId}`, {
+    ...defaultOptions,
+    method: "GET",
+  });
+  return response;
+};
+
+export const updateOrderStatus = async (
+  orderId: string,
+  status: string
+): Promise<OrderResponse> => {
+  const response = await fetchClient(`${BASE_URL}/${orderId}/status`, {
+    ...defaultOptions,
+    method: "PUT",
+    body: JSON.stringify({ status }),
+  });
+  return response;
+};
+
+export const confirmPayment = async (
+  orderId: string
+): Promise<OrderResponse> => {
+  const response = await fetchClient(`${BASE_URL}/${orderId}/confirm-payment`, {
+    ...defaultOptions,
+    method: "PUT",
+  });
+  return response;
+};
+
+export const uploadPaymentProof = async (
+  orderId: string,
+  file: File
+): Promise<OrderResponse> => {
+  const formData = new FormData();
+  formData.append("paymentProof", file);
+  const response = await fetchClient(`${BASE_URL}/${orderId}/upload-proof`, {
+    method: "PUT",
+    credentials: "include",
+    body: formData,
+  });
+  return response;
+};
+
+export const updateDeliveryInfo = async (
+  orderId: string,
+  data: Record<string, any>
+): Promise<OrderResponse> => {
+  const response = await fetchClient(`${BASE_URL}/${orderId}/delivery`, {
+    ...defaultOptions,
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+  return response;
+};
+
+export const cancelOrder = async (orderId: string): Promise<OrderResponse> => {
+  const response = await fetchClient(`${BASE_URL}/${orderId}/cancel`, {
+    ...defaultOptions,
+    method: "PUT",
+  });
+  return response;
+};
