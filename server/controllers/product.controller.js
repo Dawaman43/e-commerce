@@ -69,9 +69,22 @@ export const getProducts = async (req, res) => {
       order = "desc",
     } = req.query;
 
+    console.log("Full req.query:", req.query); // Keep
+
     const filter = {};
 
-    if (category) filter.category = category;
+    // ✅ Robust category guard
+    if (
+      category &&
+      String(category).trim() &&
+      String(category).trim() !== "undefined"
+    ) {
+      const trimmedCat = String(category).trim();
+      filter.category = { $regex: new RegExp(trimmedCat, "i") };
+      console.log("Category filter added for:", trimmedCat);
+    } else {
+      console.log("No category filter - value invalid");
+    }
 
     if (minPrice || maxPrice) {
       filter.price = {};
@@ -81,19 +94,37 @@ export const getProducts = async (req, res) => {
 
     if (inStock === "true") filter.stock = { $gt: 0 };
 
-    if (search) {
+    // ✅ Robust search guard
+    if (
+      search &&
+      String(search).trim() &&
+      String(search).trim() !== "undefined"
+    ) {
+      const trimmedSearch = String(search).trim();
       filter.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
+        { name: { $regex: trimmedSearch, $options: "i" } },
+        { description: { $regex: trimmedSearch, $options: "i" } },
       ];
+      console.log("Added $or for search:", trimmedSearch);
+    } else {
+      console.log("No $or added - search empty/invalid");
     }
+
+    console.log("Final filter:", JSON.stringify(filter, null, 2)); // Keep
 
     const total = await Product.countDocuments(filter);
 
     const products = await Product.find(filter)
       .skip((Number(page) - 1) * Number(limit))
       .limit(Number(limit))
-      .sort({ [sortBy]: order === "desc" ? -1 : 1 });
+      .sort({ [sortBy]: order === "desc" ? -1 : 1 })
+      .populate("seller", "name"); // Keep
+
+    console.log("Products found count:", products.length);
+    console.log(
+      "Sample product categories:",
+      products.map((p) => p.category)
+    ); // Keep
 
     return res.status(200).json({
       message: "Products fetched successfully",
@@ -107,7 +138,6 @@ export const getProducts = async (req, res) => {
     res.status(500).json({ error: "Internal server error." });
   }
 };
-
 export const getProductById = async (req, res) => {
   try {
     const { id } = req.params;

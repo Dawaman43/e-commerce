@@ -69,26 +69,6 @@ function Register() {
                 Continue with Google
               </Button>
             </motion.div>
-
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground">
-                By signing in, you agree to our{" "}
-                <a
-                  href="#"
-                  className="underline underline-offset-2 hover:text-primary transition-colors"
-                >
-                  Terms of Service
-                </a>{" "}
-                and{" "}
-                <a
-                  href="#"
-                  className="underline underline-offset-2 hover:text-primary transition-colors"
-                >
-                  Privacy Policy
-                </a>
-                .
-              </p>
-            </div>
           </CardContent>
         </Card>
       </motion.div>

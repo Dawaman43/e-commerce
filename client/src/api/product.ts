@@ -44,18 +44,30 @@ export const createProduct = async (
   return response;
 };
 
-/** Get all products with optional query params */
 export const getProducts = async (
   query?: Record<string, any>
 ): Promise<ProductsResponse> => {
   let queryString = "";
   if (query) {
-    queryString =
-      "?" +
-      Object.entries(query)
-        .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
-        .join("&");
+    // ✅ Filter out falsy values (null, undefined, "", "undefined")
+    const filteredQuery = Object.entries(query).reduce((acc, [key, value]) => {
+      const valStr = String(value).trim();
+      if (valStr && valStr !== "undefined") {
+        // ✅ Skip empty or "undefined"
+        acc[key] = valStr;
+      }
+      return acc;
+    }, {} as Record<string, any>);
+
+    if (Object.keys(filteredQuery).length > 0) {
+      queryString =
+        "?" +
+        Object.entries(filteredQuery)
+          .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+          .join("&");
+    }
   }
+  console.log("Final queryString:", `${BASE_URL}${queryString}`); // ✅ Log full URL
   const response = await fetchClient(`${BASE_URL}${queryString}`, {
     ...defaultOptions,
     method: "GET",

@@ -29,6 +29,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import UsersPage from "./pages/Users";
 import ModeratorDashboard from "./pages/ModeratorDashboard";
 import EditProductPage from "./pages/EditProduct";
+import CategoryProductsPage from "./pages/CategoryProducts";
 
 interface AppProps {
   className?: string;
@@ -248,6 +249,7 @@ const App = ({ className }: AppProps) => {
         {/* Public Dynamic Pages */}
         <Route path="/product/:id" element={<ProductPage />} />
         <Route path="/seller/:id" element={<SellerPage />} />
+        <Route path="/categories/:id" element={<CategoryProductsPage />} />
 
         {/* 404 Page */}
         <Route path="/*" element={<NotFoundPage />} />
