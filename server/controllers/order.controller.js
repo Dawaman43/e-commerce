@@ -260,10 +260,42 @@ export const updateDeliveryInfo = async (req, res) => {
   try {
     const { orderId } = req.params;
     const { trackingNumber, courier, shippedAt, deliveredAt } = req.body;
-    // TODO: Update deliveryInfo object
-    // TODO: Update deliveryStatus accordingly
+
+    console.log("UpdateDeliveryInfo called for order:", orderId);
+    console.log("Incoming data:", req.body);
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      console.error("Order not found:", orderId);
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    // ✅ Update delivery info
+    if (trackingNumber) order.deliveryInfo.trackingNumber = trackingNumber;
+    if (courier) order.deliveryInfo.courier = courier;
+    if (shippedAt) order.deliveryInfo.shippedAt = new Date(shippedAt);
+    if (deliveredAt) order.deliveryInfo.deliveredAt = new Date(deliveredAt);
+
+    // ✅ Update delivery status
+    if (deliveredAt) {
+      order.deliveryStatus = "delivered";
+      order.status = "completed"; // optional: mark order completed
+    } else if (shippedAt) {
+      order.deliveryStatus = "shipped";
+      order.status = "shipped";
+    } else {
+      order.deliveryStatus = "pending";
+      if (order.status === "pending") order.status = "pending";
+    }
+
+    await order.save();
+    console.log("Delivery info updated:", order.deliveryInfo);
+
+    res
+      .status(200)
+      .json({ message: "Delivery info updated successfully", order });
   } catch (error) {
-    console.log("Update delivery info error: ", error);
+    console.error("Update delivery info error:", error);
     res.status(500).json({ error: "Server error" });
   }
 };

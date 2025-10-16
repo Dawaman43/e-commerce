@@ -6,6 +6,7 @@ import {
   getOrderById,
   getOrdersByBuyer,
   getOrdersBySeller,
+  updateDeliveryInfo,
   updateOrderStatus,
   uploadPaymentProof,
 } from "../controllers/order.controller.js";
@@ -31,6 +32,7 @@ router.put(
 );
 router.put("/:orderId/status", requireAuth, updateOrderStatus);
 router.put("/:orderId/confirm-payment", requireAuth, confirmPayment);
+router.put("/:orderId/delivery", requireAuth, updateDeliveryInfo);
 
 router.get("/:orderId", requireAuth, getOrderById);
 
