@@ -84,11 +84,21 @@ export const getOrdersByBuyer = async (req, res) => {
   }
 };
 
-// 4️⃣ Get orders by seller
 export const getOrdersBySeller = async (req, res) => {
   try {
     const { sellerId } = req.params;
-    // TODO: Fetch orders filtered by seller
+    const orders = await Order.find({ seller: sellerId })
+      .populate("buyer", "name email")
+      .populate("seller", "name email")
+      .populate("product", "name price");
+
+    if (!orders.length) {
+      return res
+        .status(404)
+        .json({ message: "No orders found for this seller" });
+    }
+
+    res.status(200).json({ orders });
   } catch (error) {
     console.log("Get orders by seller error: ", error);
     res.status(500).json({ error: "Server error" });
