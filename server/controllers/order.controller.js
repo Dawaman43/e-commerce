@@ -255,14 +255,10 @@ export const uploadPaymentProof = async (req, res) => {
   }
 };
 
-// 9️⃣ Update delivery info
 export const updateDeliveryInfo = async (req, res) => {
   try {
     const { orderId } = req.params;
     const { trackingNumber, courier, shippedAt, deliveredAt } = req.body;
-
-    console.log("UpdateDeliveryInfo called for order:", orderId);
-    console.log("Incoming data:", req.body);
 
     const order = await Order.findById(orderId);
     if (!order) {
@@ -270,16 +266,14 @@ export const updateDeliveryInfo = async (req, res) => {
       return res.status(404).json({ error: "Order not found" });
     }
 
-    // ✅ Update delivery info
     if (trackingNumber) order.deliveryInfo.trackingNumber = trackingNumber;
     if (courier) order.deliveryInfo.courier = courier;
     if (shippedAt) order.deliveryInfo.shippedAt = new Date(shippedAt);
     if (deliveredAt) order.deliveryInfo.deliveredAt = new Date(deliveredAt);
 
-    // ✅ Update delivery status
     if (deliveredAt) {
       order.deliveryStatus = "delivered";
-      order.status = "completed"; // optional: mark order completed
+      order.status = "completed";
     } else if (shippedAt) {
       order.deliveryStatus = "shipped";
       order.status = "shipped";
@@ -300,24 +294,37 @@ export const updateDeliveryInfo = async (req, res) => {
   }
 };
 
-// 🔟 Cancel order
 export const cancelOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
-    // TODO: Update status to 'cancelled'
-  } catch (error) {
-    console.log("Cancel order error: ", error);
-    res.status(500).json({ error: "Server error" });
-  }
-};
+    console.log("CancelOrder called for order:", orderId);
 
-// 1️⃣1️⃣ Delete order (admin)
-export const deleteOrder = async (req, res) => {
-  try {
-    const { orderId } = req.params;
-    // TODO: Delete order from DB
+    const order = await Order.findById(orderId);
+    if (!order) {
+      console.error("Order not found:", orderId);
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.status === "cancelled") {
+      console.warn("Order already cancelled:", orderId);
+      return res.status(400).json({ error: "Order is already cancelled" });
+    }
+
+    order.status = "cancelled";
+    order.deliveryStatus = "pending";
+    await order.save();
+    console.log("Order cancelled:", orderId);
+
+    const product = await Product.findById(order.product);
+    if (product) {
+      product.stock = Number(product.stock) + Number(order.quantity);
+      await product.save();
+      console.log("Restored product stock for:", product._id);
+    }
+
+    res.status(200).json({ message: "Order cancelled successfully", order });
   } catch (error) {
-    console.log("Delete order error: ", error);
+    console.error("Cancel order error:", error);
     res.status(500).json({ error: "Server error" });
   }
 };

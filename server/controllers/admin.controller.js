@@ -193,3 +193,13 @@ export const getUser = async (req, res) => {
     return res.status(500).json({ error: "Internal server error." });
   }
 };
+
+export const deleteOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    // TODO: Delete order from DB
+  } catch (error) {
+    console.log("Delete order error: ", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
