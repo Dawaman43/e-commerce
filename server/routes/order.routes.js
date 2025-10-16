@@ -2,6 +2,7 @@ import express from "express";
 import {
   createOrder,
   getAllOrders,
+  getOrderById,
   getOrdersByBuyer,
   getOrdersBySeller,
 } from "../controllers/order.controller.js";
@@ -13,5 +14,6 @@ router.post("/", requireAuth, createOrder);
 router.get("/", requireAuth, getAllOrders);
 router.get("/buyer/:buyerId", requireAuth, getOrdersByBuyer);
 router.get("/seller/:sellerId", requireAuth, getOrdersBySeller);
+router.get("/:orderId", requireAuth, getOrderById);
 
 export default router;

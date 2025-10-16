@@ -105,12 +105,19 @@ export const getOrdersBySeller = async (req, res) => {
   }
 };
 
-// 5️⃣ Get single order by ID
 export const getOrderById = async (req, res) => {
   try {
     const { orderId } = req.params;
-    // TODO: Fetch single order by ID
-    // TODO: Populate buyer, seller, product
+    const order = await Order.findById(orderId)
+      .populate("buyer", "name email")
+      .populate("seller", "name email")
+      .populate("product", "name price");
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    res.status(200).json({ order });
   } catch (error) {
     console.log("Get order by ID error: ", error);
     res.status(500).json({ error: "Server error" });
