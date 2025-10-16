@@ -62,11 +62,22 @@ export const getAllOrders = async (req, res) => {
   }
 };
 
-// 3️⃣ Get orders by buyer
 export const getOrdersByBuyer = async (req, res) => {
   try {
     const { buyerId } = req.params;
-    // TODO: Fetch orders filtered by buyer
+
+    const orders = await Order.find({ buyer: buyerId })
+      .populate("buyer", "name email")
+      .populate("seller", "name email")
+      .populate("product", "name price");
+
+    if (!orders.length) {
+      return res
+        .status(404)
+        .json({ message: "No orders found for this buyer" });
+    }
+
+    res.status(200).json({ orders });
   } catch (error) {
     console.log("Get orders by buyer error: ", error);
     res.status(500).json({ error: "Server error" });
