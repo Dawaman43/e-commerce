@@ -1,7 +1,15 @@
 import { Order } from "../models/order.model.js";
 import { Product } from "../models/product.model.js";
 
-// 1️⃣ Create a new order
+const allowedStatuses = [
+  "pending",
+  "payment_sent",
+  "paid",
+  "shipped",
+  "completed",
+  "cancelled",
+];
+
 export const createOrder = async (req, res) => {
   try {
     const buyerId = req.user.id;
@@ -124,13 +132,28 @@ export const getOrderById = async (req, res) => {
   }
 };
 
-// 6️⃣ Update order status
 export const updateOrderStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
     const { status } = req.body;
-    // TODO: Validate status
-    // TODO: Update order status
+
+    if (!status || !allowedStatuses.includes(status)) {
+      return res.status(400).json({ error: "Invalid order status" });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    order.status = status;
+
+    if (status === "shipped") order.deliveryStatus = "shipped";
+    if (status === "completed") order.deliveryStatus = "delivered";
+
+    await order.save();
+
+    res.status(200).json({ message: "Order status updated", order });
   } catch (error) {
     console.log("Update order status error: ", error);
     res.status(500).json({ error: "Server error" });
