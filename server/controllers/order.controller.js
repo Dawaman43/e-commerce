@@ -1,3 +1,4 @@
+import cloudinary from "../libs/cloudinary.js";
 import { Order } from "../models/order.model.js";
 import { Product } from "../models/product.model.js";
 
@@ -12,46 +13,76 @@ const allowedStatuses = [
 
 export const createOrder = async (req, res) => {
   try {
-    const buyerId = req.user.id;
+    const buyerId = req.user?.id;
     const { seller, product, quantity } = req.body;
 
+    if (!buyerId) {
+      console.error("Error: buyerId not found in req.user");
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     if (!seller || !product || !quantity) {
+      console.error("Error: Missing seller, product, or quantity");
       return res
         .status(400)
         .json({ error: "Seller, product, and quantity are required" });
     }
 
+    const qty = Number(quantity);
+    if (isNaN(qty) || qty <= 0) {
+      console.error("Error: Invalid quantity:", quantity);
+      return res
+        .status(400)
+        .json({ error: "Quantity must be a positive number" });
+    }
+
+    console.log("Step 2: Fetching product:", product);
     const productData = await Product.findById(product);
     if (!productData) {
+      console.error("Error: Product not found");
       return res.status(404).json({ error: "Product not found" });
     }
 
-    if (Number(quantity) > Number(productData.stock)) {
+    if (qty > Number(productData.stock)) {
+      console.error(
+        `Error: Requested quantity (${qty}) exceeds stock (${productData.stock})`
+      );
       return res
         .status(400)
         .json({ error: "Requested quantity exceeds stock" });
     }
 
-    const totalAmount = productData.price * quantity;
+    const totalAmount = productData.price * qty;
+    console.log("Step 3: Calculated totalAmount:", totalAmount);
 
+    console.log("Step 4: Creating order...");
     const newOrder = await Order.create({
       buyer: buyerId,
       seller,
       product,
-      quantity,
+      quantity: qty,
       totalAmount,
       status: "pending",
       deliveryStatus: "pending",
     });
 
-    productData.stock = Number(productData.stock) - Number(quantity);
+    console.log("Step 5: Reducing product stock");
+    productData.stock = Number(productData.stock) - qty;
     await productData.save();
+
+    console.log("Step 6: Populating order for response");
+    const populatedOrder = await Order.findById(newOrder._id)
+      .populate("buyer", "name email")
+      .populate("seller", "name email")
+      .populate("product", "name price");
+
+    console.log("Step 7: Order created successfully:", populatedOrder._id);
 
     res
       .status(201)
-      .json({ message: "Order created successfully", order: newOrder });
+      .json({ message: "Order created successfully", order: populatedOrder });
   } catch (error) {
-    console.log("Create order error: ", error);
+    console.error("Create order error:", error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -180,12 +211,44 @@ export const confirmPayment = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
-// 8️⃣ Upload payment proof (by buyer)
+
 export const uploadPaymentProof = async (req, res) => {
   try {
     const { orderId } = req.params;
-    // TODO: Save payment proof
-    // TODO: Update status to 'payment_sent'
+
+    if (!req.file) {
+      return res.status(400).json({ error: "Payment proof is required" });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (!order.paymentConfirmedBySeller) {
+      return res
+        .status(403)
+        .json({ error: "Seller must confirm payment before uploading proof" });
+    }
+
+    const uploaded = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: "payment_proofs", resource_type: "image" },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      stream.end(req.file.buffer);
+    });
+
+    order.paymentProof = uploaded.secure_url;
+    order.status = "payment_sent";
+    await order.save();
+
+    console.log("Uploaded to Cloudinary:", uploaded.secure_url);
+
+    res.status(200).json({ message: "Payment proof uploaded", order });
   } catch (error) {
     console.log("Upload payment proof error: ", error);
     res.status(500).json({ error: "Server error" });

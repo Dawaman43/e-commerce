@@ -26,13 +26,15 @@ app.use(
   })
 );
 app.use((req, res, next) => {
-  // Skip JSON parsing for product uploads (multipart/form-data)
   if (
-    req.path.startsWith("/api/products") &&
-    (req.method === "POST" || req.method === "PUT")
+    (req.path.startsWith("/api/products") &&
+      (req.method === "POST" || req.method === "PUT")) ||
+    (req.path.match(/^\/api\/orders\/.*\/upload-proof$/) &&
+      req.method === "PUT")
   ) {
     return next();
   }
+
   express.json({ limit: "50mb" })(req, res, () => {
     express.urlencoded({ limit: "50mb", extended: true })(req, res, next);
   });
@@ -48,6 +50,15 @@ app.use("/api/orders", orderRoutes);
 
 // ✅ Better-auth handler
 app.all("/api/auth/*splat", toNodeHandler(auth));
+
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({ error: "File size should not exceed 5MB" });
+    }
+  }
+  next(err);
+});
 
 // ✅ Server listen
 app.listen(port, () => {
