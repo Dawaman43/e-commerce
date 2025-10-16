@@ -160,18 +160,26 @@ export const updateOrderStatus = async (req, res) => {
   }
 };
 
-// 7️⃣ Confirm payment (by seller)
 export const confirmPayment = async (req, res) => {
   try {
     const { orderId } = req.params;
-    // TODO: Set paymentConfirmedBySeller to true
-    // TODO: Update status to 'paid'
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    order.paymentConfirmedBySeller = true;
+    order.status = "paid";
+
+    await order.save();
+
+    res.status(200).json({ message: "Payment confirmed by seller", order });
   } catch (error) {
     console.log("Confirm payment error: ", error);
     res.status(500).json({ error: "Server error" });
   }
 };
-
 // 8️⃣ Upload payment proof (by buyer)
 export const uploadPaymentProof = async (req, res) => {
   try {
