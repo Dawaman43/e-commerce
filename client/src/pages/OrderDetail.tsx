@@ -63,9 +63,24 @@ const statusConfig: Record<
 } as const;
 
 const getStatusInfo = (
-  status: OrderStatus
+  status?: OrderStatus
 ): { label: string; color: BadgeVariant; icon: React.ReactNode } => {
-  return statusConfig[status];
+  if (!status) {
+    return {
+      label: "Unknown",
+      color: "destructive",
+      icon: <AlertCircle className="w-4 h-4" />,
+    };
+  }
+  const info = statusConfig[status];
+  if (!info) {
+    return {
+      label: "Unknown",
+      color: "destructive",
+      icon: <AlertCircle className="w-4 h-4" />,
+    };
+  }
+  return info;
 };
 
 const getUserName = (user: UserType | string): string => {
@@ -78,9 +93,9 @@ const getProductDetails = (product: Product | string | null | undefined) => {
     return { name: product, image: "", price: "" };
   if (!product) return { name: "Unknown Product", image: "", price: "" };
   return {
-    name: product.name,
-    image: product.images[0] || "",
-    price: product.price,
+    name: product.name || "Unknown Product",
+    image: product.images?.[0] || "",
+    price: product.price || "",
   };
 };
 
@@ -275,7 +290,11 @@ function OrderDetailPage() {
                       <div className="flex items-center gap-1 mt-2">
                         <DollarSign className="w-4 h-4" />
                         <span className="text-sm font-semibold">
-                          ${(totalAmount / quantity).toFixed(2)} each
+                          $
+                          {(quantity > 0 ? totalAmount / quantity : 0).toFixed(
+                            2
+                          )}{" "}
+                          each
                         </span>
                       </div>
                     </div>

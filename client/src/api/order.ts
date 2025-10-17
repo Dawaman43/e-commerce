@@ -6,6 +6,11 @@ import type {
 } from "@/types/order";
 import { fetchClient } from "@/utils/fetchClient";
 
+// Simple ObjectId validator (24-char hex string) – exported for reuse in components
+export const isValidObjectId = (id: string): boolean => {
+  return /^[0-9a-fA-F]{24}$/.test(id);
+};
+
 const BASE_URL = `${BACKEND_API_URL}/api/orders`;
 
 const defaultOptions: RequestInit = {
@@ -52,6 +57,9 @@ export const getOrders = async (
 };
 
 export const getOrderById = async (id: string): Promise<OrderResponse> => {
+  if (!id || !isValidObjectId(id)) {
+    throw new Error("Invalid order ID");
+  }
   const response = await fetchClient(`${BASE_URL}/${id}`, {
     ...defaultOptions,
     method: "GET",
@@ -62,6 +70,9 @@ export const getOrderById = async (id: string): Promise<OrderResponse> => {
 export const getOrdersByBuyer = async (
   buyerId: string
 ): Promise<OrdersResponse> => {
+  if (!buyerId || buyerId === "current-buyer-id" || !isValidObjectId(buyerId)) {
+    throw new Error("Invalid buyer ID");
+  }
   const response = await fetchClient(`${BASE_URL}/buyer/${buyerId}`, {
     ...defaultOptions,
     method: "GET",
@@ -72,6 +83,13 @@ export const getOrdersByBuyer = async (
 export const getOrdersBySeller = async (
   sellerId: string
 ): Promise<OrdersResponse> => {
+  if (
+    !sellerId ||
+    sellerId === "current-seller-id" ||
+    !isValidObjectId(sellerId)
+  ) {
+    throw new Error("Invalid seller ID");
+  }
   const response = await fetchClient(`${BASE_URL}/seller/${sellerId}`, {
     ...defaultOptions,
     method: "GET",
@@ -83,6 +101,9 @@ export const updateOrderStatus = async (
   orderId: string,
   status: string
 ): Promise<OrderResponse> => {
+  if (!orderId || !isValidObjectId(orderId)) {
+    throw new Error("Invalid order ID");
+  }
   const response = await fetchClient(`${BASE_URL}/${orderId}/status`, {
     ...defaultOptions,
     method: "PUT",
@@ -94,6 +115,9 @@ export const updateOrderStatus = async (
 export const confirmPayment = async (
   orderId: string
 ): Promise<OrderResponse> => {
+  if (!orderId || !isValidObjectId(orderId)) {
+    throw new Error("Invalid order ID");
+  }
   const response = await fetchClient(`${BASE_URL}/${orderId}/confirm-payment`, {
     ...defaultOptions,
     method: "PUT",
@@ -105,6 +129,12 @@ export const uploadPaymentProof = async (
   orderId: string,
   file: File
 ): Promise<OrderResponse> => {
+  if (!orderId || !isValidObjectId(orderId)) {
+    throw new Error("Invalid order ID");
+  }
+  if (!file) {
+    throw new Error("Payment proof file is required");
+  }
   const formData = new FormData();
   formData.append("paymentProof", file);
   const response = await fetchClient(`${BASE_URL}/${orderId}/upload-proof`, {
@@ -119,6 +149,9 @@ export const updateDeliveryInfo = async (
   orderId: string,
   data: Record<string, any>
 ): Promise<OrderResponse> => {
+  if (!orderId || !isValidObjectId(orderId)) {
+    throw new Error("Invalid order ID");
+  }
   const response = await fetchClient(`${BASE_URL}/${orderId}/delivery`, {
     ...defaultOptions,
     method: "PUT",
@@ -128,6 +161,9 @@ export const updateDeliveryInfo = async (
 };
 
 export const cancelOrder = async (orderId: string): Promise<OrderResponse> => {
+  if (!orderId || !isValidObjectId(orderId)) {
+    throw new Error("Invalid order ID");
+  }
   const response = await fetchClient(`${BASE_URL}/${orderId}/cancel`, {
     ...defaultOptions,
     method: "PUT",
@@ -136,6 +172,9 @@ export const cancelOrder = async (orderId: string): Promise<OrderResponse> => {
 };
 
 export const acceptOrder = async (orderId: string): Promise<OrderResponse> => {
+  if (!orderId || !isValidObjectId(orderId)) {
+    throw new Error("Invalid order ID");
+  }
   const response = await fetchClient(`${BASE_URL}/${orderId}/accept`, {
     ...defaultOptions,
     method: "PUT",

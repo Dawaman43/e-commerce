@@ -1,6 +1,10 @@
 import { Route, Routes, Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/components/auth-provider";
+import { isValidObjectId } from "@/api/order"; // Reuse validator for sellerId checks
 import type { JSX } from "react";
+import {
+  Loader2, // For spinners (from lucide-react)
+} from "lucide-react";
 import HomePage from "./pages/Home";
 import AuthPage from "./pages/Auth";
 import NotFoundPage from "./pages/NotFound";
@@ -34,43 +38,52 @@ import OrderDetailPage from "./pages/OrderDetail";
 import AdminUserBanPage from "./pages/AdminUserBan";
 import SearchResultPage from "./pages/SearchResult";
 import CartPage from "./pages/Cart";
+import OrderAcceptPage from "./pages/OrderAccept";
 
 interface AppProps {
   className?: string;
 }
 
-// ✅ Protected Route - waits for auth loading before redirecting
+// Key Change 1: Enhanced ProtectedRoute – adds valid ID check for extra safety.
+// Waits for auth loading (session + token) before rendering/redirecting.
+// Prevents any downstream fetches (e.g., in OrderAcceptPage) from running with invalid sellerId.
 function ProtectedRoute({ children }: { children: JSX.Element }) {
   const { user, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <p>Loading...</p>
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading user session...</p>
+        </div>
       </div>
     );
   }
 
-  if (!user) {
+  if (!user || !user.id || !isValidObjectId(user.id)) {
     return <Navigate to="/auth" replace />;
   }
 
   return children;
 }
 
-// ✅ Role-based Route - only allows certain roles
+// Role-based Route – minor UX tweak for loading.
 function RoleRoute({ allowedRoles }: { allowedRoles: string[] }) {
   const { user, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <p>Loading...</p>
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading user session...</p>
+        </div>
       </div>
     );
   }
 
-  if (!user) {
+  if (!user || !user.id || !isValidObjectId(user.id)) {
     return <Navigate to="/auth" replace />;
   }
 
@@ -81,14 +94,17 @@ function RoleRoute({ allowedRoles }: { allowedRoles: string[] }) {
   return <Outlet />;
 }
 
-// ✅ Auth Route - redirects logged-in users away from /auth
+// Auth Route – enhanced loading.
 function AuthRoute({ children }: { children: JSX.Element }) {
   const { user, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <p>Loading...</p>
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading user session...</p>
+        </div>
       </div>
     );
   }
@@ -96,37 +112,62 @@ function AuthRoute({ children }: { children: JSX.Element }) {
   return user ? <Navigate to="/" replace /> : children;
 }
 
-// ✅ Home Route Wrapper - redirects admin/moderator to dashboards
+// Home Wrapper – enhanced with ID validation.
 function HomeWrapper({ children }: { children: JSX.Element }) {
   const { user, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <p>Loading...</p>
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading user session...</p>
+        </div>
       </div>
     );
   }
 
-  if (!user) return children; // Public access for unauthenticated users
+  if (!user || !user.id || !isValidObjectId(user.id)) {
+    return children; // Public for unauth
+  }
 
   const role = user.role || "user";
   if (role === "moderator")
     return <Navigate to="/moderator/dashboard" replace />;
   if (role === "admin") return <Navigate to="/admin/dashboard" replace />;
 
-  return children; // normal user -> home
+  return children;
 }
 
-// ✅ Main App Routes
+// Main App Routes
 const App = ({ className }: AppProps) => {
-  const { loading } = useAuth();
+  // Key Change 2: Destructure user/loading here if needed for global logic.
+  const { user, loading } = useAuth();
 
-  // Optional: global loading screen during initial auth check
+  // Optional: Global fetch for shared pending orders (e.g., for nav badge).
+  // Uncomment if this is where fetchPendingOrders lives – guarded like in OrderAcceptPage.
+  // This prevents "Invalid seller ID" globally.
+  /*
+  useEffect(() => {
+    const fetchPendingOrders = async () => {
+      if (loading || !user?.id || !isValidObjectId(user.id)) {
+        // Silently wait – no fetch until ready.
+        return;
+      }
+      // Your fetch logic here...
+    };
+    fetchPendingOrders();
+  }, [user?.id, loading]);
+  */
+
+  // Global loading – covers initial auth (BetterAuth + token).
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <p>Loading session...</p>
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading session...</p>
+        </div>
       </div>
     );
   }
@@ -204,10 +245,10 @@ const App = ({ className }: AppProps) => {
           }
         />
         <Route
-          path="/order/accept"
+          path="/accept-order"
           element={
             <ProtectedRoute>
-              <CartPage />
+              <OrderAcceptPage />
             </ProtectedRoute>
           }
         />

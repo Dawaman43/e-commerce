@@ -96,21 +96,22 @@ function Sidebar({ className, isCollapsed, onToggle }: SidebarProps) {
       { id: 3, name: "Sell", link: "/sell", icon: ShoppingBag },
       { id: 4, name: "My Orders", link: "/dashboard/orders", icon: Package },
       { id: 5, name: "Profile", link: "/profile", icon: UserIcon },
-      { id: 6, name: "Edit Product", link: "/edit-product", icon: Edit },
+      { id: 6, name: "Accept order", link: "/accept-order", icon: Handshake },
+      { id: 7, name: "Edit Product", link: "/edit-product", icon: Edit },
       {
-        id: 7,
+        id: 8,
         name: "Account",
         link: "/account",
         icon: Settings,
         children: [
           {
-            id: 71,
+            id: 81,
             name: "Profile Settings",
             link: "/profile",
             icon: UserIcon,
           },
-          { id: 72, name: "Security", link: "/security", icon: Shield },
-          { id: 73, name: "Billing", link: "/billing", icon: DollarSign },
+          { id: 82, name: "Security", link: "/security", icon: Shield },
+          { id: 83, name: "Billing", link: "/billing", icon: DollarSign },
         ],
       },
     ];

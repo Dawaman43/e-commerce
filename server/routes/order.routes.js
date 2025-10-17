@@ -11,6 +11,7 @@ import {
   uploadPaymentProof,
   updateDeliveryInfo,
   cancelOrder,
+  acceptOrder,
 } from "../controllers/order.controller.js";
 import { requireAuth } from "../middlewares/auth.middleware.js";
 
@@ -32,6 +33,8 @@ router.get("/", requireAuth, getAllOrders);
 router.get("/buyer/:buyerId", requireAuth, getOrdersByBuyer);
 router.get("/seller/:sellerId", requireAuth, getOrdersBySeller);
 router.get("/:orderId", requireAuth, getOrderById);
+
+router.put("/:orderId/accept", requireAuth, acceptOrder);
 
 router.put("/:orderId/status", requireAuth, updateOrderStatus);
 router.put("/:orderId/confirm-payment", requireAuth, confirmPayment);

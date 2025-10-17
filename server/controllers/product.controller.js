@@ -4,7 +4,8 @@ import { Product } from "../models/product.model.js";
 
 export const createProduct = async (req, res) => {
   try {
-    const { name, description, category, price, stock } = req.body;
+    const { name, description, category, price, stock, paymentOptions } =
+      req.body;
 
     if (!name || !price || !stock) {
       return res
@@ -17,23 +18,29 @@ export const createProduct = async (req, res) => {
     }
 
     let uploadedImages = [];
-
     if (req.files && req.files.length > 0) {
       uploadedImages = await Promise.all(
-        req.files.map((file) => {
-          return new Promise((resolve, reject) => {
-            const stream = cloudinary.uploader.upload_stream(
-              { folder: "products" },
-              (error, result) => {
-                if (error) return reject(error);
-                resolve(result.secure_url);
-              }
-            );
-            stream.end(file.buffer);
-          });
-        })
+        req.files.map(
+          (file) =>
+            new Promise((resolve, reject) => {
+              const stream = cloudinary.uploader.upload_stream(
+                { folder: "products" },
+                (error, result) => {
+                  if (error) return reject(error);
+                  resolve(result.secure_url);
+                }
+              );
+              stream.end(file.buffer);
+            })
+        )
       );
     }
+
+    // Ensure only allowed payment options are saved
+    const allowedOptions = ["bank_transfer", "tellebir", "mepesa"];
+    const filteredPaymentOptions = (paymentOptions || ["bank_transfer"]).filter(
+      (opt) => allowedOptions.includes(opt)
+    );
 
     const newProduct = await Product.create({
       seller: req.user._id,
@@ -43,6 +50,7 @@ export const createProduct = async (req, res) => {
       price,
       stock,
       images: uploadedImages,
+      paymentOptions: filteredPaymentOptions,
     });
 
     return res.status(201).json({

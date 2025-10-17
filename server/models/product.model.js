@@ -23,6 +23,12 @@ const productSchema = new mongoose.Schema(
         rating: Number,
       },
     ],
+
+    paymentOptions: {
+      type: [String],
+      enum: ["bank_transfer", "telebirr", "mepesa"],
+      default: ["bank_transfer"],
+    },
   },
   {
     timestamps: true,

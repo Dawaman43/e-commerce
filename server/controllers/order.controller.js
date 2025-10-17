@@ -1,6 +1,7 @@
 import cloudinary from "../libs/cloudinary.js";
 import { Order } from "../models/order.model.js";
 import { Product } from "../models/product.model.js";
+import mongoose from "mongoose"; // Add this import for validation
 
 const allowedStatuses = [
   "pending",
@@ -106,6 +107,12 @@ export const getOrdersByBuyer = async (req, res) => {
   try {
     const { buyerId } = req.params;
 
+    // Add validation
+    if (!mongoose.isValidObjectId(buyerId)) {
+      console.error("Invalid buyerId:", buyerId);
+      return res.status(400).json({ error: "Invalid buyer ID format" });
+    }
+
     const orders = await Order.find({ buyer: buyerId })
       .populate("buyer", "name email")
       .populate("seller", "name email")
@@ -127,6 +134,13 @@ export const getOrdersByBuyer = async (req, res) => {
 export const getOrdersBySeller = async (req, res) => {
   try {
     const { sellerId } = req.params;
+
+    // Add validation
+    if (!mongoose.isValidObjectId(sellerId)) {
+      console.error("Invalid sellerId:", sellerId);
+      return res.status(400).json({ error: "Invalid seller ID format" });
+    }
+
     const orders = await Order.find({ seller: sellerId })
       .populate("buyer", "name email")
       .populate("seller", "name email")
@@ -338,6 +352,7 @@ export const cancelOrder = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+
 export const acceptOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
