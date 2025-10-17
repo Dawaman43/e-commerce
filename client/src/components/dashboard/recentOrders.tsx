@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -9,190 +10,185 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { motion, useInView, easeOut } from "framer-motion";
-import { useRef } from "react";
 import {
   Package,
   CheckCircle,
   RefreshCw,
   User,
   Calendar,
-  MapPin,
   Star,
   MessageCircle,
   Eye,
   Search,
   Filter,
 } from "lucide-react";
+import { getOrders } from "@/api/order";
+import type { Order, OrdersResponse, OrderStatus } from "@/types/order";
+import type { Product } from "@/types/product";
+import type { User as UserType } from "@/types/user";
 
-// Types for safety
-type OrderStatus = "completed" | "delivered" | "refunded" | "cancelled";
-type Order = {
-  id: string;
-  item: string;
-  seller: string;
-  status: OrderStatus;
-  date: string;
-  price: string;
-  location: string;
-  rating?: number | null; // Optional for completed orders
-};
-
-// Mock data - replace with API fetch (e.g., useQuery for recent orders, sorted by date desc)
-const mockOrders: Order[] = [
-  {
-    id: "#ORD-12344",
-    item: "Acoustic Guitar",
-    seller: "Morgan Santos",
-    status: "completed",
-    date: "Sep 30, 2025",
-    price: "Trade for Amp",
-    location: "Staten Island, NY",
-    rating: 5,
-  },
-  {
-    id: "#ORD-12343",
-    item: "Jewelry & Accessories",
-    seller: "Quinn Morales",
-    status: "delivered",
-    date: "Oct 5, 2025",
-    price: "$50",
-    location: "Lower East Side, NY",
-    rating: null,
-  },
-  {
-    id: "#ORD-12342",
-    item: "Tech Accessories",
-    seller: "Drew Nguyen",
-    status: "completed",
-    date: "Sep 25, 2025",
-    price: "$75",
-    location: "Upper East Side, NY",
-    rating: 4.5,
-  },
-  {
-    id: "#ORD-12341",
-    item: "Home Decor",
-    seller: "Casey Patel",
-    status: "refunded",
-    date: "Oct 8, 2025",
-    price: "$120",
-    location: "Harlem, NY",
-    rating: null,
-  },
-  {
-    id: "#ORD-12340",
-    item: "Books & Collectibles",
-    seller: "Riley Chen",
-    status: "delivered",
-    date: "Oct 10, 2025",
-    price: "$20",
-    location: "Bronx, NY",
-    rating: null,
-  },
-];
+type RecentOrder = Order & { rating?: number | null };
 
 type BadgeVariant = "default" | "secondary" | "outline" | "destructive";
-
-const statusConfig: Record<
-  OrderStatus,
-  { label: string; color: BadgeVariant }
-> = {
-  completed: { label: "Completed", color: "default" },
-  delivered: { label: "Delivered", color: "secondary" },
-  refunded: { label: "Refunded", color: "outline" },
-  cancelled: { label: "Cancelled", color: "destructive" },
-} as const;
 
 const getStatusInfo = (
   status: OrderStatus
 ): { label: string; color: BadgeVariant } => {
-  return statusConfig[status];
+  switch (status) {
+    case "completed":
+      return { label: "Completed", color: "default" };
+    case "shipped":
+      return { label: "Delivered", color: "secondary" };
+    case "cancelled":
+      return { label: "Cancelled", color: "destructive" };
+    default:
+      return { label: status, color: "outline" };
+  }
 };
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.2,
-    },
-  },
+const getItemName = (order: Order): string => {
+  if (typeof order.product === "string") return order.product;
+  return (order.product as Product)?.name || "";
 };
 
-const rowVariants = {
-  hidden: { opacity: 0, x: -20 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: { duration: 0.4, ease: easeOut },
-  },
+const getSellerName = (order: Order): string => {
+  if (typeof order.seller === "string") return order.seller;
+  return (order.seller as UserType)?.name || "";
+};
+
+const formatDate = (dateStr?: string): string => {
+  if (!dateStr) return "";
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 };
 
 function RecentOrders() {
-  const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, amount: 0.2 });
-
-  // Reduced motion check
-  const shouldReduceMotion =
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // State for orders and loading
+  const [orders, setOrders] = useState<RecentOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // State for filtering and searching
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
 
-  const hasOrders = mockOrders.length > 0;
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        const response: OrdersResponse = await getOrders();
+        // Filter for recent orders only
+        const recentStatuses: OrderStatus[] = [
+          "completed",
+          "shipped",
+          "cancelled",
+        ];
+        const recentOrders = (response.orders || [])
+          .filter((order) => recentStatuses.includes(order.status))
+          .map((order) => ({ ...order, rating: null } as RecentOrder));
+        setOrders(recentOrders);
+      } catch (err) {
+        console.error("Failed to fetch orders:", err);
+        setError("Failed to load orders. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Filtered orders
-  const filteredOrders: Order[] = mockOrders
-    .filter(
-      (order) =>
-        order.item.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.seller.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .filter((order) => filterStatus === "all" || order.status === filterStatus)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Sort by date descending
+    fetchOrders();
+  }, []);
 
-  // Mock refresh function
   const handleRefresh = () => {
-    // Simulate API refresh
-    console.log("Refreshing recent orders...");
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        const response: OrdersResponse = await getOrders();
+        // Filter for recent orders only
+        const recentStatuses: OrderStatus[] = [
+          "completed",
+          "shipped",
+          "cancelled",
+        ];
+        const recentOrders = (response.orders || [])
+          .filter((order) => recentStatuses.includes(order.status))
+          .map((order) => ({ ...order, rating: null } as RecentOrder));
+        setOrders(recentOrders);
+      } catch (err) {
+        console.error("Failed to refresh orders:", err);
+        setError("Failed to refresh orders. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
   };
 
+  const hasOrders = orders.length > 0;
+
+  // Filtered orders
+  const filteredOrders: RecentOrder[] = orders
+    .filter(
+      (order) =>
+        getItemName(order).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getSellerName(order).toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .filter((order) => filterStatus === "all" || order.status === filterStatus)
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt || 0).getTime() -
+        new Date(a.createdAt || 0).getTime()
+    ); // Sort by date descending
+
   // Check if order is recent (within 7 days)
-  const isRecent = (dateStr: string) => {
-    const now = new Date("2025-10-13"); // Current date
-    const orderDate = new Date(
-      dateStr.replace(/(\w{3}) (\d{1,2}), (\d{4})/, "$3-$2 $1")
-    );
+  const isRecent = (dateStr?: string) => {
+    if (!dateStr) return false;
+    const now = new Date("2025-10-17"); // Current date
+    const orderDate = new Date(dateStr);
     const diffTime = Math.abs(now.getTime() - orderDate.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays <= 7;
   };
 
+  if (loading) {
+    return (
+      <section className="relative py-8 md:py-12 bg-gradient-to-br from-background to-muted/20">
+        <div className="container mx-auto px-4 md:px-8 lg:px-16">
+          <div className="text-center py-16">
+            <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">
+              Loading your recent orders...
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="relative py-8 md:py-12 bg-gradient-to-br from-background to-muted/20">
+        <div className="container mx-auto px-4 md:px-8 lg:px-16">
+          <div className="text-center py-16">
+            <p className="text-destructive mb-4">{error}</p>
+            <Button onClick={handleRefresh}>Retry</Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section
-      ref={ref}
       className="relative py-8 md:py-12 bg-gradient-to-br from-background to-muted/20"
       aria-label="Your recent orders"
     >
       <div className="container mx-auto px-4 md:px-8 lg:px-16">
         {/* Header */}
-        <motion.div
-          className="flex items-center justify-between mb-8"
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={{
-            hidden: { opacity: 0, y: 20 },
-            visible: {
-              opacity: 1,
-              y: 0,
-              transition: { duration: 0.6 },
-            },
-          }}
-        >
+        <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-2xl md:text-3xl font-bold mb-1 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
               Recent Orders
@@ -217,25 +213,16 @@ function RecentOrders() {
               className="hidden md:flex items-center gap-2"
               asChild
             >
-              <motion.a
-                href="/dashboard/orders/history"
-                whileHover={shouldReduceMotion ? {} : { scale: 1.05 }}
-                transition={{ duration: 0.2 }}
-              >
+              <Link to="/dashboard/orders/history">
                 <Eye className="w-4 h-4" />
                 View Order History
-              </motion.a>
+              </Link>
             </Button>
           </div>
-        </motion.div>
+        </div>
 
         {/* Filters and Search */}
-        <motion.div
-          className="flex flex-col sm:flex-row gap-4 mb-6 justify-between items-center"
-          initial={{ opacity: 0, y: 10 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-        >
+        <div className="flex flex-col sm:flex-row gap-4 mb-6 justify-between items-center">
           <div className="relative flex-1 sm:w-64">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
@@ -253,33 +240,22 @@ function RecentOrders() {
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="delivered">Delivered</SelectItem>
-              <SelectItem value="refunded">Refunded</SelectItem>
+              <SelectItem value="shipped">Delivered</SelectItem>
               <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
-        </motion.div>
+        </div>
 
         {/* Results Info */}
         {hasOrders && (
-          <motion.p
-            className="text-center text-muted-foreground mb-6"
-            initial={{ opacity: 0 }}
-            animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            Showing {filteredOrders.length} of {mockOrders.length} recent orders
-          </motion.p>
+          <p className="text-center text-muted-foreground mb-6">
+            Showing {filteredOrders.length} of {orders.length} recent orders
+          </p>
         )}
 
         {filteredOrders.length > 0 ? (
           <div className="overflow-x-auto">
-            <motion.div
-              className="w-full"
-              variants={containerVariants}
-              initial="hidden"
-              animate={isInView ? "visible" : "hidden"}
-            >
+            <div className="w-full">
               {/* Desktop Table */}
               <table className="hidden md:table w-full bg-card rounded-lg shadow-sm border border-border">
                 <thead>
@@ -306,31 +282,25 @@ function RecentOrders() {
                 </thead>
                 <tbody>
                   {filteredOrders.map((order) => (
-                    <motion.tr
-                      key={order.id}
+                    <tr
+                      key={order._id}
                       className="border-b border-border/20 hover:bg-muted/50 transition-colors"
-                      variants={rowVariants}
-                      whileHover={
-                        shouldReduceMotion
-                          ? {}
-                          : { backgroundColor: "rgba(0,0,0,0.04)" }
-                      }
                     >
                       <td className="p-4 font-mono text-sm text-muted-foreground">
-                        {order.id}
+                        {order._id}
                       </td>
                       <td className="p-4">
                         <div className="font-medium text-foreground">
-                          {order.item}
+                          {getItemName(order)}
                         </div>
                         <div className="text-sm text-primary font-semibold">
-                          {order.price}
+                          ${order.totalAmount}
                         </div>
                       </td>
                       <td className="p-4">
                         <div className="flex items-center gap-2">
                           <User className="w-4 h-4 text-muted-foreground" />
-                          <span>{order.seller}</span>
+                          <span>{getSellerName(order)}</span>
                         </div>
                       </td>
                       <td className="p-4">
@@ -350,8 +320,8 @@ function RecentOrders() {
                       </td>
                       <td className="p-4 text-sm text-muted-foreground flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
-                        {order.date}
-                        {isRecent(order.date) && (
+                        {formatDate(order.createdAt)}
+                        {isRecent(order.createdAt) && (
                           <Badge variant="secondary" className="ml-2 text-xs">
                             Recent
                           </Badge>
@@ -392,7 +362,7 @@ function RecentOrders() {
                           </Button>
                         </div>
                       </td>
-                    </motion.tr>
+                    </tr>
                   ))}
                 </tbody>
               </table>
@@ -400,17 +370,22 @@ function RecentOrders() {
               {/* Mobile Cards */}
               <div className="md:hidden space-y-4">
                 {filteredOrders.map((order) => (
-                  <motion.div
-                    key={order.id}
+                  <div
+                    key={order._id}
                     className="bg-card rounded-lg p-4 shadow-sm border border-border hover:shadow-md transition-shadow"
-                    variants={rowVariants}
-                    whileHover={shouldReduceMotion ? {} : { y: -2 }}
                   >
                     <div className="flex justify-between items-start mb-2">
                       <span className="font-mono text-sm text-muted-foreground">
-                        {order.id}
+                        {order._id}
                       </span>
-                      <Badge variant={getStatusInfo(order.status).color}>
+                      <Badge
+                        variant={getStatusInfo(order.status).color}
+                        className={
+                          order.status === "completed"
+                            ? "bg-green-100 text-green-800 border-green-200"
+                            : ""
+                        }
+                      >
                         {order.status === "completed" && (
                           <CheckCircle className="w-3 h-3 mr-1" />
                         )}
@@ -418,28 +393,24 @@ function RecentOrders() {
                       </Badge>
                     </div>
                     <h3 className="font-medium text-foreground mb-1">
-                      {order.item}
+                      {getItemName(order)}
                     </h3>
                     <p className="text-primary font-semibold mb-2">
-                      {order.price}
+                      ${order.totalAmount}
                     </p>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
                       <div className="flex items-center gap-1">
                         <User className="w-4 h-4" />
-                        <span>{order.seller}</span>
+                        <span>{getSellerName(order)}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
-                        <span>{order.date}</span>
-                        {isRecent(order.date) && (
+                        <span>{formatDate(order.createdAt)}</span>
+                        {isRecent(order.createdAt) && (
                           <Badge variant="secondary" className="ml-1 text-xs">
                             Recent
                           </Badge>
                         )}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" />
-                        <span>{order.location}</span>
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -468,18 +439,13 @@ function RecentOrders() {
                         <MessageCircle className="w-4 h-4" />
                       </Button>
                     </div>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
-            </motion.div>
+            </div>
           </div>
         ) : (
-          <motion.div
-            className="text-center py-16"
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6 }}
-          >
+          <div className="text-center py-16">
             <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">
               No recent orders
@@ -489,16 +455,9 @@ function RecentOrders() {
               trades.
             </p>
             <Button asChild>
-              <motion.a
-                href="/listings"
-                whileHover={shouldReduceMotion ? {} : { scale: 1.05 }}
-                whileTap={shouldReduceMotion ? {} : { scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-              >
-                Start Browsing
-              </motion.a>
+              <Link to="/listings">Start Browsing</Link>
             </Button>
-          </motion.div>
+          </div>
         )}
       </div>
     </section>
