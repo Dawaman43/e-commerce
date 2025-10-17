@@ -92,7 +92,6 @@ const mockOrders: Order[] = [
   },
 ];
 
-// Valid shadcn Badge variants only
 type BadgeVariant = "default" | "secondary" | "outline" | "destructive";
 
 const statusConfig: Record<
