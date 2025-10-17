@@ -1,5 +1,4 @@
-import { motion, useInView } from "framer-motion";
-import { useRef, useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -18,78 +17,33 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { easeOut } from "framer-motion";
+import { getOrders } from "@/api/order";
+import type { Order, OrdersResponse, OrderStatus } from "@/types/order";
+import type { Product } from "@/types/product";
+import type { User as UserType } from "@/types/user";
+import { RefreshCw } from "lucide-react";
 
-type StatusKey = "pending" | "shipped" | "delivered" | "cancelled";
+const getItemName = (order: Order): string => {
+  if (typeof order.product === "string") return order.product;
+  return (order.product as Product)?.name || "";
+};
 
-// Mock orders
-const orders = [
-  {
-    id: "#ORD-001",
-    date: "2025-10-12",
-    status: "delivered" as StatusKey,
-    items: [{ name: "Vintage Vinyl Record Player", qty: 1, price: "$150" }],
-    total: "$150.00",
-    seller: "jane_doe",
-    tracking: "UPS123456789",
-    slug: "ord-001",
-  },
-  {
-    id: "#ORD-002",
-    date: "2025-10-10",
-    status: "shipped" as StatusKey,
-    items: [{ name: "Wireless Gaming Headset", qty: 1, price: "$80" }],
-    total: "$80.00",
-    seller: "tech_guy88",
-    tracking: "USPS987654321",
-    slug: "ord-002",
-  },
-  {
-    id: "#ORD-003",
-    date: "2025-10-08",
-    status: "pending" as StatusKey,
-    items: [
-      { name: "Handmade Ceramic Mug Set", qty: 1, price: "$25" },
-      { name: "Leather Jacket (Size M)", qty: 1, price: "$100" },
-    ],
-    total: "$125.00",
-    seller: "crafty_mom",
-    tracking: null,
-    slug: "ord-003",
-  },
-  {
-    id: "#ORD-004",
-    date: "2025-10-05",
-    status: "cancelled" as StatusKey,
-    items: [{ name: "Mountain Bike - Like New", qty: 1, price: "$300" }],
-    total: "$300.00",
-    seller: "bike_enthusiast",
-    tracking: null,
-    slug: "ord-004",
-  },
-  {
-    id: "#ORD-005",
-    date: "2025-10-03",
-    status: "delivered" as StatusKey,
-    items: [{ name: "Acoustic Guitar", qty: 1, price: "$200" }],
-    total: "$200.00",
-    seller: "music_lover",
-    tracking: "FedEx456789012",
-    slug: "ord-005",
-  },
-  {
-    id: "#ORD-006",
-    date: "2025-10-01",
-    status: "shipped" as StatusKey,
-    items: [{ name: "Trade: PS5 for Headset", qty: 1, price: "Trade" }],
-    total: "Trade",
-    seller: "fashionista22",
-    tracking: null,
-    slug: "ord-006",
-  },
-];
+const getSellerName = (order: Order): string => {
+  if (typeof order.seller === "string") return order.seller;
+  return (order.seller as UserType)?.name || "";
+};
 
-// Status icons and colors
+const formatDate = (dateStr?: string): string => {
+  if (!dateStr) return "";
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+type StatusKey = OrderStatus;
+
 const statusConfig: Record<
   StatusKey,
   { icon: React.ComponentType<any>; color: string; label: string }
@@ -99,15 +53,25 @@ const statusConfig: Record<
     color: "bg-yellow-100 text-yellow-800",
     label: "Pending",
   },
+  payment_sent: {
+    icon: Clock,
+    color: "bg-yellow-100 text-yellow-800",
+    label: "Payment Sent",
+  },
+  paid: {
+    icon: CheckCircle,
+    color: "bg-green-100 text-green-800",
+    label: "Paid",
+  },
   shipped: {
     icon: Truck,
     color: "bg-blue-100 text-blue-800",
     label: "Shipped",
   },
-  delivered: {
+  completed: {
     icon: CheckCircle,
     color: "bg-green-100 text-green-800",
-    label: "Delivered",
+    label: "Completed",
   },
   cancelled: {
     icon: XCircle,
@@ -116,80 +80,106 @@ const statusConfig: Record<
   },
 };
 
-// Mock filter categories (statuses)
 const statusFilters = [
-  { name: "Pending", value: "pending" },
-  { name: "Shipped", value: "shipped" },
-  { name: "Delivered", value: "delivered" },
-  { name: "Cancelled", value: "cancelled" },
+  { name: "Pending", value: "pending" as const },
+  { name: "Payment Sent", value: "payment_sent" as const },
+  { name: "Paid", value: "paid" as const },
+  { name: "Shipped", value: "shipped" as const },
+  { name: "Completed", value: "completed" as const },
+  { name: "Cancelled", value: "cancelled" as const },
 ];
 
-// Animation variants
-const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: easeOut },
-  },
-};
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4 },
-  },
-};
-
-const hoverScale = {
-  hover: { scale: 1.05, transition: { duration: 0.2 } },
-  tap: { scale: 0.95 },
-};
-
 function OrdersPage() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.1 });
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStatuses, setSelectedStatuses] = useState(new Set());
+  const [selectedStatuses, setSelectedStatuses] = useState<Set<StatusKey>>(
+    new Set()
+  );
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        const response: OrdersResponse = await getOrders();
+        setOrders(response.orders || []);
+      } catch (err) {
+        console.error("Failed to fetch orders:", err);
+        setError("Failed to load orders. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, []);
+
+  const handleRefresh = async () => {
+    try {
+      setLoading(true);
+      const response: OrdersResponse = await getOrders();
+      setOrders(response.orders || []);
+    } catch (err) {
+      console.error("Failed to refresh orders:", err);
+      setError("Failed to refresh orders. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter orders based on search and status
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
-      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.seller.toLowerCase().includes(searchTerm.toLowerCase());
+      order._id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      getSellerName(order).toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
       selectedStatuses.size === 0 || selectedStatuses.has(order.status);
     return matchesSearch && matchesStatus;
   });
 
-  // Reduced motion check
-  const shouldReduceMotion =
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Calculate stats
+  const totalOrders = orders.length;
+  const pendingCount = orders.filter(
+    (o) => o.status === "pending" || o.status === "payment_sent"
+  ).length;
+  const shippedCount = orders.filter((o) => o.status === "shipped").length;
+  const deliveredCount = orders.filter(
+    (o) => o.status === "paid" || o.status === "completed"
+  ).length;
+  const cancelledCount = orders.filter((o) => o.status === "cancelled").length;
+  const totalSpent = orders
+    .filter((o) => o.status === "completed" || o.status === "paid")
+    .reduce((sum, o) => sum + o.totalAmount, 0);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading your orders...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-destructive mb-4">{error}</p>
+          <Button onClick={handleRefresh}>Retry</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Hero Section */}
       <section className="relative py-20 md:py-32 bg-gradient-to-br from-primary/10 to-muted/20">
         <div className="container mx-auto px-4 md:px-8 lg:px-16">
-          <motion.div
-            className="text-center max-w-4xl mx-auto"
-            initial="hidden"
-            animate={isInView ? "visible" : "hidden"}
-            variants={fadeInUp}
-          >
+          <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-foreground via-primary to-secondary bg-clip-text text-transparent mb-6">
               Your Orders
             </h1>
@@ -208,7 +198,7 @@ function OrdersPage() {
                 />
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
@@ -228,13 +218,7 @@ function OrdersPage() {
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Orders List */}
-            <motion.div
-              ref={ref}
-              className="lg:col-span-3"
-              variants={staggerContainer}
-              initial="hidden"
-              animate={isInView ? "visible" : "hidden"}
-            >
+            <div className="lg:col-span-3">
               {filteredOrders.length === 0 ? (
                 <div className="text-center py-12">
                   <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -248,90 +232,82 @@ function OrdersPage() {
                     const StatusIcon = statusConfig[order.status].icon;
                     const statusColor = statusConfig[order.status].color;
                     const statusLabel = statusConfig[order.status].label;
+                    const item = {
+                      name: getItemName(order),
+                      qty: order.quantity,
+                      price:
+                        typeof order.product === "string"
+                          ? `$${order.totalAmount / order.quantity}`
+                          : (order.product as Product).price,
+                    };
                     return (
-                      <motion.div
-                        key={order.id}
-                        variants={itemVariants}
-                        whileHover={shouldReduceMotion ? {} : hoverScale}
-                      >
-                        <a href={`/orders/${order.slug}`}>
-                          <Card className="overflow-hidden border-border hover:border-primary/50 transition-colors group cursor-pointer">
-                            <CardHeader className="p-6 pb-4">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm font-medium text-muted-foreground">
-                                    {order.id}
-                                  </span>
-                                  <Badge className={`${statusColor} px-2 py-1`}>
-                                    <StatusIcon className="w-3 h-3 mr-1" />
-                                    {statusLabel}
-                                  </Badge>
-                                </div>
-                                <div className="text-sm text-muted-foreground">
-                                  {new Date(order.date).toLocaleDateString()}
-                                </div>
+                      <a key={order._id} href={`/orders/${order._id}`}>
+                        <Card className="overflow-hidden border-border hover:border-primary/50 transition-colors group cursor-pointer">
+                          <CardHeader className="p-6 pb-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-muted-foreground">
+                                  {order._id}
+                                </span>
+                                <Badge className={`${statusColor} px-2 py-1`}>
+                                  <StatusIcon className="w-3 h-3 mr-1" />
+                                  {statusLabel}
+                                </Badge>
                               </div>
-                            </CardHeader>
-                            <CardContent className="p-6 pt-0">
-                              <div className="space-y-3">
-                                {order.items.map((item, index) => (
-                                  <div
-                                    key={index}
-                                    className="flex items-center gap-3"
-                                  >
-                                    <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
-                                      <Package className="w-6 h-6 text-muted-foreground" />
-                                    </div>
-                                    <div className="flex-1">
-                                      <p className="font-medium">{item.name}</p>
-                                      <p className="text-sm text-muted-foreground">
-                                        Qty: {item.qty}
-                                      </p>
-                                    </div>
-                                    <span className="font-semibold">
-                                      {item.price}
-                                    </span>
-                                  </div>
-                                ))}
+                              <div className="text-sm text-muted-foreground">
+                                {formatDate(order.createdAt)}
                               </div>
-                              <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                  <User className="w-4 h-4" />
-                                  <span>Sold by @{order.seller}</span>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="p-6 pt-0">
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
+                                  <Package className="w-6 h-6 text-muted-foreground" />
                                 </div>
-                                <div className="text-lg font-bold text-primary">
-                                  {order.total}
+                                <div className="flex-1">
+                                  <p className="font-medium">{item.name}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    Qty: {item.qty}
+                                  </p>
                                 </div>
+                                <span className="font-semibold">
+                                  {item.price}
+                                </span>
                               </div>
-                              {order.tracking && (
-                                <div className="mt-3 pt-3 border-t border-border">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="w-full justify-between"
-                                  >
-                                    Track Order
-                                    <ChevronRight className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              )}
-                            </CardContent>
-                          </Card>
-                        </a>
-                      </motion.div>
+                            </div>
+                            <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <User className="w-4 h-4" />
+                                <span>Sold by @{getSellerName(order)}</span>
+                              </div>
+                              <div className="text-lg font-bold text-primary">
+                                ${order.totalAmount.toFixed(2)}
+                              </div>
+                            </div>
+                            {order.deliveryInfo?.trackingNumber && (
+                              <div className="mt-3 pt-3 border-t border-border">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="w-full justify-between"
+                                >
+                                  Track Order
+                                  <ChevronRight className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </a>
                     );
                   })}
                 </div>
               )}
-            </motion.div>
+            </div>
 
             {/* Sidebar Filters */}
-            <motion.aside
-              className="lg:col-span-1 space-y-6"
-              variants={staggerContainer}
-              initial="hidden"
-              animate={isInView ? "visible" : "hidden"}
-            >
+            <aside className="lg:col-span-1 space-y-6">
               {/* Status Filter */}
               <Card>
                 <CardHeader className="pb-4">
@@ -375,28 +351,28 @@ function OrdersPage() {
                 <CardContent className="space-y-4">
                   <div className="flex justify-between text-sm">
                     <span>Total Orders:</span>
-                    <span className="font-semibold">{orders.length}</span>
+                    <span className="font-semibold">{totalOrders}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Pending:</span>
-                    <span className="font-semibold">1</span>
+                    <span className="font-semibold">{pendingCount}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Shipped:</span>
-                    <span className="font-semibold">2</span>
+                    <span className="font-semibold">{shippedCount}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Delivered:</span>
-                    <span className="font-semibold">2</span>
+                    <span className="font-semibold">{deliveredCount}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Cancelled:</span>
-                    <span className="font-semibold">1</span>
+                    <span className="font-semibold">{cancelledCount}</span>
                   </div>
                   <div className="pt-4 border-t border-border">
                     <div className="flex justify-between text-lg font-bold text-primary">
                       <span>Total Spent:</span>
-                      <span>$855.00</span>
+                      <span>${totalSpent.toFixed(2)}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -432,7 +408,7 @@ function OrdersPage() {
                   </div>
                 </CardContent>
               </Card>
-            </motion.aside>
+            </aside>
           </div>
         </div>
       </section>
