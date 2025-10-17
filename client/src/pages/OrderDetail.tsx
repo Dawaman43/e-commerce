@@ -194,11 +194,11 @@ function OrderDetailPage() {
 
         {/* Pending Acceptance Alert */}
         {isPendingAcceptance && (
-          <Alert className="mb-6">
+          <Alert className="mb-6" variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              This order is pending seller acceptance. You are not accepted yet.
-              The seller will review and accept or reject your order soon.
+              You are not accepted yet. The seller has not reviewed this order.
+              Please wait for seller's response.
             </AlertDescription>
           </Alert>
         )}
@@ -229,10 +229,10 @@ function OrderDetailPage() {
                     </p>
                   )}
                   {isPendingAcceptance && (
-                    <div className="mt-2 p-3 bg-muted rounded-md">
-                      <p className="text-sm text-muted-foreground">
-                        <AlertCircle className="inline h-4 w-4 mr-1" />
-                        Not accepted yet. Seller has not reviewed this order.
+                    <div className="mt-2 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                      <p className="text-sm text-destructive flex items-center">
+                        <AlertCircle className="h-4 w-4 mr-1" />
+                        Not Accepted - Seller has not accepted this order yet.
                       </p>
                     </div>
                   )}
@@ -249,43 +249,38 @@ function OrderDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {productDetails.image && !isPendingAcceptance && (
-                  <img
-                    src={productDetails.image}
-                    alt={productDetails.name}
-                    className="w-full h-48 object-cover rounded-lg"
-                  />
-                )}
-                {isPendingAcceptance && (
-                  <div className="h-48 bg-muted rounded-lg flex items-center justify-center">
-                    <AlertCircle className="h-8 w-8 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground ml-2">
-                      Product details unavailable until accepted
-                    </p>
+                {isPendingAcceptance ? (
+                  <div className="h-48 bg-muted rounded-lg flex items-center justify-center text-muted-foreground">
+                    <AlertCircle className="h-8 w-8 mr-2" />
+                    <span>
+                      Product details unavailable until seller accepts the order
+                    </span>
                   </div>
-                )}
-                <div>
-                  <h3 className="font-semibold text-foreground">
-                    {productDetails.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Quantity: {quantity}
-                  </p>
-                  {!isPendingAcceptance && (
-                    <div className="flex items-center gap-1 mt-2">
-                      <DollarSign className="w-4 h-4" />
-                      <span className="text-sm font-semibold">
-                        ${(totalAmount / quantity).toFixed(2)} each
-                      </span>
+                ) : (
+                  <>
+                    {productDetails.image && (
+                      <img
+                        src={productDetails.image}
+                        alt={productDetails.name}
+                        className="w-full h-48 object-cover rounded-lg"
+                      />
+                    )}
+                    <div>
+                      <h3 className="font-semibold text-foreground">
+                        {productDetails.name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Quantity: {quantity}
+                      </p>
+                      <div className="flex items-center gap-1 mt-2">
+                        <DollarSign className="w-4 h-4" />
+                        <span className="text-sm font-semibold">
+                          ${(totalAmount / quantity).toFixed(2)} each
+                        </span>
+                      </div>
                     </div>
-                  )}
-                  {isPendingAcceptance && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Price and details will be available once the seller
-                      accepts the order.
-                    </p>
-                  )}
-                </div>
+                  </>
+                )}
               </CardContent>
             </Card>
 
@@ -298,7 +293,14 @@ function OrderDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {!isPendingAcceptance ? (
+                {isPendingAcceptance ? (
+                  <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                    <p className="text-sm text-destructive flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      Payment not possible until seller accepts the order.
+                    </p>
+                  </div>
+                ) : (
                   <>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">
@@ -321,80 +323,76 @@ function OrderDetailPage() {
                       </div>
                     )}
                   </>
-                ) : (
-                  <div className="p-3 bg-muted rounded-md">
-                    <p className="text-sm text-muted-foreground">
-                      Payment details will be available after seller acceptance.
-                    </p>
-                  </div>
                 )}
               </CardContent>
             </Card>
 
             {/* Delivery Info */}
-            {deliveryInfo &&
-              Object.keys(deliveryInfo).length > 0 &&
-              !isPendingAcceptance && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Truck className="w-5 h-5" />
-                      Delivery Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {deliveryInfo.trackingNumber && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">
-                          Tracking Number:
-                        </span>
-                        <span className="text-sm">
-                          {deliveryInfo.trackingNumber}
-                        </span>
-                      </div>
-                    )}
-                    {deliveryInfo.courier && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">Courier:</span>
-                        <span className="text-sm">{deliveryInfo.courier}</span>
-                      </div>
-                    )}
-                    {deliveryInfo.shippedAt && (
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        <span className="text-sm">
-                          Shipped: {formatDate(deliveryInfo.shippedAt)}
-                        </span>
-                      </div>
-                    )}
-                    {deliveryInfo.deliveredAt && (
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4" />
-                        <span className="text-sm">
-                          Delivered: {formatDate(deliveryInfo.deliveredAt)}
-                        </span>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-            {isPendingAcceptance && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Truck className="w-5 h-5" />
-                    Delivery Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="p-3 bg-muted rounded-md">
-                    <p className="text-sm text-muted-foreground">
-                      Delivery details will be provided after seller acceptance.
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Truck className="w-5 h-5" />
+                  Delivery Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {isPendingAcceptance ? (
+                  <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                    <p className="text-sm text-destructive flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      Delivery details unavailable until accepted.
                     </p>
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                ) : (
+                  <>
+                    {deliveryInfo && Object.keys(deliveryInfo).length > 0 ? (
+                      <>
+                        {deliveryInfo.trackingNumber && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">
+                              Tracking Number:
+                            </span>
+                            <span className="text-sm">
+                              {deliveryInfo.trackingNumber}
+                            </span>
+                          </div>
+                        )}
+                        {deliveryInfo.courier && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">
+                              Courier:
+                            </span>
+                            <span className="text-sm">
+                              {deliveryInfo.courier}
+                            </span>
+                          </div>
+                        )}
+                        {deliveryInfo.shippedAt && (
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4" />
+                            <span className="text-sm">
+                              Shipped: {formatDate(deliveryInfo.shippedAt)}
+                            </span>
+                          </div>
+                        )}
+                        {deliveryInfo.deliveredAt && (
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4" />
+                            <span className="text-sm">
+                              Delivered: {formatDate(deliveryInfo.deliveredAt)}
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        No delivery information yet.
+                      </p>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           {/* Sidebar */}
@@ -416,7 +414,7 @@ function OrderDetailPage() {
                       {seller.email}
                     </p>
                   )}
-                {!isPendingAcceptance && (
+                {!isPendingAcceptance ? (
                   <Button
                     variant="outline"
                     size="sm"
@@ -432,11 +430,13 @@ function OrderDetailPage() {
                       Contact Seller
                     </Link>
                   </Button>
-                )}
-                {isPendingAcceptance && (
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Contact available after acceptance.
-                  </p>
+                ) : (
+                  <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md mt-3">
+                    <p className="text-sm text-destructive flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      Contact unavailable until accepted.
+                    </p>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -459,9 +459,12 @@ function OrderDetailPage() {
                     </p>
                   )}
                 {isPendingAcceptance && (
-                  <p className="text-sm text-muted-foreground">
-                    Buyer details limited until accepted.
-                  </p>
+                  <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                    <p className="text-sm text-destructive flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      Buyer details limited until accepted.
+                    </p>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -482,15 +485,16 @@ function OrderDetailPage() {
                     Back to Orders
                   </Link>
                 </Button>
-                {!isPendingAcceptance && status === "pending" && (
+                {!isPendingAcceptance && status === "payment_sent" && (
                   <Button variant="outline" className="w-full" disabled>
                     Upload Payment Proof
                   </Button>
                 )}
                 {isPendingAcceptance && (
-                  <div className="p-3 bg-muted rounded-md">
-                    <p className="text-sm text-muted-foreground">
-                      Actions available after seller acceptance.
+                  <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                    <p className="text-sm text-destructive flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      Actions unavailable until seller accepts the order.
                     </p>
                   </div>
                 )}
