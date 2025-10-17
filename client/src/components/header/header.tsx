@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
+import { getCart } from "@/api/cart";
 import ToggleTheme from "../toggle-theme";
 import SearchBar from "./searchBar";
 import UserAvatar from "./userAvatar";
@@ -87,8 +88,34 @@ function NavBar({ links }: NavBarProps) {
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
   const { user, logout } = useAuth(); // Assuming logout is available in useAuth
   const role = user?.role || "user";
+
+  const fetchCartCount = async () => {
+    if (!user) {
+      setCartCount(0);
+      return;
+    }
+
+    try {
+      const res = await getCart();
+      setCartCount(res.cart?.items.length || 0);
+    } catch (err) {
+      console.error("Failed to fetch cart count:", err);
+      setCartCount(0);
+    }
+  };
+
+  useEffect(() => {
+    fetchCartCount();
+  }, [user]);
+
+  useEffect(() => {
+    // Poll every 10 seconds for real-time updates
+    const interval = setInterval(fetchCartCount, 10000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   // Dynamic nav links based on authentication and role
   const getNavLinks = (): NavLink[] => {
@@ -160,12 +187,19 @@ function Header() {
           {/* Right section: User actions - Enhanced with more shadcn components */}
           <div className="hidden sm:flex items-center space-x-2 flex-shrink-0">
             <ToggleTheme />
-            <Button variant="ghost" size="icon" asChild>
-              <Link to="/cart" className="h-8 w-8">
-                <ShoppingCart className="h-5 w-5" />
-                <span className="sr-only">Cart</span>
-              </Link>
-            </Button>
+            <div className="relative">
+              <Button variant="ghost" size="icon" asChild>
+                <Link to="/cart" className="h-8 w-8">
+                  <ShoppingCart className="h-5 w-5" />
+                  <span className="sr-only">Cart</span>
+                </Link>
+              </Button>
+              {cartCount > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 rounded-full text-xs flex items-center justify-center">
+                  {cartCount}
+                </Badge>
+              )}
+            </div>
             <UserAvatar />
           </div>
 
@@ -255,17 +289,24 @@ function Header() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                      <Button
-                        variant="ghost"
-                        className="justify-start"
-                        asChild
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <Link to="/cart">
-                          <ShoppingCart className="mr-2 h-4 w-4" />
-                          Cart
-                        </Link>
-                      </Button>
+                      <div className="relative">
+                        <Button
+                          variant="ghost"
+                          className="justify-start"
+                          asChild
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <Link to="/cart">
+                            <ShoppingCart className="mr-2 h-4 w-4" />
+                            Cart
+                          </Link>
+                        </Button>
+                        {cartCount > 0 && (
+                          <Badge className="absolute top-0 right-0 h-4 w-4 p-0 rounded-full text-xs flex items-center justify-center -translate-y-1/2 translate-x-1/2">
+                            {cartCount}
+                          </Badge>
+                        )}
+                      </div>
                       <Button
                         variant="ghost"
                         className="justify-start"
