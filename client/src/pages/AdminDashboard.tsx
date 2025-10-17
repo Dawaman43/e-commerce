@@ -1,5 +1,4 @@
-// AdminDashboard.tsx - Updated without header and AdminSidebar
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ShoppingBag,
   Handshake,
@@ -25,11 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
+import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { cn } from "@/lib/utils";
 import {
   BarChart,
@@ -41,118 +36,199 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { getProducts } from "@/api/product";
+import { getOrders } from "@/api/order";
+import { getUsers } from "@/api/admin";
+import type { ProductsResponse } from "@/types/product";
+import type { OrdersResponse } from "@/types/order";
+import type { GetUsersResponse } from "@/types/admin";
+import { Button } from "@/components/ui/button";
 
-// Mock Data for P2P Marketplace
-const mockStats = [
-  {
-    title: "Total Users",
-    value: "12,234",
-    change: "+12%",
-    icon: Users,
-    color: "text-emerald-600",
-  },
-  {
-    title: "Active Listings",
-    value: "5,678",
-    change: "+8%",
-    icon: ShoppingBag,
-    color: "text-blue-600",
-  },
-  {
-    title: "Total Transactions",
-    value: "2,456",
-    change: "+15%",
-    icon: Handshake,
-    color: "text-purple-600",
-  },
-  {
-    title: "Platform Revenue",
-    value: "$9,876",
-    change: "+3%",
-    icon: DollarSign,
-    color: "text-amber-600",
-  },
-];
+// Helper component for chart legend
+const ChartLegend = ({ payload }: { payload?: any[] }) => {
+  if (!payload) return null;
+  return (
+    <ul className="flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-4 text-xs">
+      {payload.map((entry, index) => (
+        <li
+          key={`legend-${index}`}
+          className="capitalize flex items-center space-x-1"
+        >
+          <div className={`w-3 h-3 rounded-sm ${entry.color}`} />
+          <span>{entry.value}</span>
+        </li>
+      ))}
+    </ul>
+  );
+};
 
-const mockRecentTransactions = [
-  {
-    id: "#TXN001",
-    seller: "John Doe",
-    buyer: "Jane Smith",
-    item: "Vintage Watch",
-    amount: "$299.99",
-    status: "Completed",
-    date: "2025-10-14",
-  },
-  {
-    id: "#TXN002",
-    seller: "Bob Johnson",
-    buyer: "Alice Brown",
-    item: "Handmade Leather Bag",
-    amount: "$149.50",
-    status: "In Dispute",
-    date: "2025-10-13",
-  },
-  {
-    id: "#TXN003",
-    seller: "Charlie Wilson",
-    buyer: "Eva Davis",
-    item: "Custom Sneakers",
-    amount: "$89.99",
-    status: "Payment Received",
-    date: "2025-10-12",
-  },
-  {
-    id: "#TXN004",
-    seller: "Mia Green",
-    buyer: "Liam White",
-    item: "Art Print",
-    amount: "$199.00",
-    status: "Cancelled",
-    date: "2025-10-11",
-  },
-  {
-    id: "#TXN005",
-    seller: "Noah Lee",
-    buyer: "Olivia Taylor",
-    item: "Guitar",
-    amount: "$349.75",
-    status: "Completed",
-    date: "2025-10-10",
-  },
-];
-
-const mockChartData = [
-  { month: "Jan", listings: 1200, transactions: 800 },
-  { month: "Feb", listings: 1500, transactions: 950 },
-  { month: "Mar", listings: 1800, transactions: 1100 },
-  { month: "Apr", listings: 2000, transactions: 1300 },
-  { month: "May", listings: 2200, transactions: 1400 },
-  { month: "Jun", listings: 2500, transactions: 1600 },
-  { month: "Jul", listings: 2800, transactions: 1800 },
-];
-
-const statusColors = {
-  Completed: "bg-green-100 text-green-800",
-  "In Dispute": "bg-yellow-100 text-yellow-800",
-  "Payment Received": "bg-blue-100 text-blue-800",
-  Cancelled: "bg-red-100 text-red-800",
+type ChartConfig = {
+  [label: string]: {
+    label?: string;
+    color?: string;
+  };
 };
 
 function AdminDashboard() {
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    activeListings: 0,
+    totalTransactions: 0,
+    platformRevenue: 0,
+  });
+  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredTransactions = mockRecentTransactions.filter(
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch users
+        const usersResponse: GetUsersResponse = await getUsers();
+        const totalUsers = usersResponse.users?.length || 0;
+
+        // Fetch products for active listings (assume all products are active)
+        const productsResponse: ProductsResponse = await getProducts();
+        const activeListings = productsResponse.products?.length || 0;
+
+        // Fetch orders for transactions and revenue
+        const ordersResponse: OrdersResponse = await getOrders();
+        const totalTransactions = ordersResponse.orders?.length || 0;
+        const completedOrders =
+          ordersResponse.orders?.filter(
+            (order) => order.status === "completed"
+          ) || [];
+        const platformRevenue = completedOrders.reduce(
+          (sum, order) => sum + order.totalAmount,
+          0
+        );
+
+        // Set stats
+        setStats({
+          totalUsers,
+          activeListings,
+          totalTransactions,
+          platformRevenue,
+        });
+
+        // Recent transactions (last 5 completed or recent orders)
+        const recent =
+          ordersResponse.orders
+            ?.filter((order) => order.createdAt)
+            ?.sort(
+              (a, b) =>
+                new Date(b.createdAt!).getTime() -
+                new Date(a.createdAt!).getTime()
+            )
+            ?.slice(0, 5)
+            ?.map((order) => ({
+              id: `#${order._id.slice(-6)}`,
+              seller:
+                typeof order.seller === "string"
+                  ? order.seller
+                  : order.seller.name || "Unknown Seller",
+              buyer:
+                typeof order.buyer === "string"
+                  ? order.buyer
+                  : order.buyer.name || "Unknown Buyer",
+              item:
+                typeof order.product === "string"
+                  ? order.product
+                  : order.product.name,
+              amount: `$${order.totalAmount.toFixed(2)}`,
+              status: order.status,
+              date: new Date(order.createdAt!).toLocaleDateString(),
+            })) || [];
+
+        setRecentTransactions(recent);
+
+        // Chart data - group orders and products by month (simplified for last 7 months)
+        const now = new Date();
+        const months = [];
+        for (let i = 6; i >= 0; i--) {
+          const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          months.push(date.toLocaleString("default", { month: "short" }));
+        }
+
+        const monthlyListings = months.map((month) => ({
+          month,
+          listings:
+            productsResponse.products?.filter(
+              (p) =>
+                p.createdAt &&
+                new Date(p.createdAt).toLocaleString("default", {
+                  month: "short",
+                }) === month
+            )?.length || 0,
+          transactions:
+            ordersResponse.orders?.filter(
+              (o) =>
+                o.createdAt &&
+                new Date(o.createdAt).toLocaleString("default", {
+                  month: "short",
+                }) === month
+            )?.length || 0,
+        }));
+
+        setChartData(monthlyListings);
+      } catch (err) {
+        console.error("Failed to fetch dashboard data:", err);
+        setError("Failed to load dashboard data. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const filteredTransactions = recentTransactions.filter(
     (transaction) =>
       transaction.seller.toLowerCase().includes(searchTerm.toLowerCase()) ||
       transaction.buyer.toLowerCase().includes(searchTerm.toLowerCase()) ||
       transaction.item.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const chartConfig = {
+  const chartConfig: ChartConfig = {
     listings: { label: "New Listings", color: "hsl(var(--primary))" },
     transactions: { label: "Transactions", color: "hsl(var(--destructive))" },
-  } satisfies ChartConfig;
+  };
+
+  const statusColors = {
+    completed: "bg-green-100 text-green-800",
+    shipped: "bg-blue-100 text-blue-800",
+    paid: "bg-green-100 text-green-800",
+    pending: "bg-yellow-100 text-yellow-800",
+    payment_sent: "bg-yellow-100 text-yellow-800",
+    cancelled: "bg-red-100 text-red-800",
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <p className="text-destructive mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -172,28 +248,64 @@ function AdminDashboard() {
 
           {/* Stats Cards - Responsive grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {mockStats.map((stat, index) => {
-              const Icon = stat.icon;
-              const isPositive = stat.change.startsWith("+");
-              return (
-                <Card key={index} className="hover:shadow-lg transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-xs sm:text-sm font-medium">
-                      {stat.title}
-                    </CardTitle>
-                    <Icon className={`h-4 w-4 ${stat.color}`} />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-xl sm:text-2xl font-bold">
-                      {stat.value}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {stat.change} from last month
-                    </p>
-                  </CardContent>
-                </Card>
-              );
-            })}
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-xs sm:text-sm font-medium">
+                  Total Users
+                </CardTitle>
+                <Users className="h-4 w-4 text-emerald-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl sm:text-2xl font-bold">
+                  {stats.totalUsers.toLocaleString()}
+                </div>
+                <p className="text-xs text-muted-foreground">Active users</p>
+              </CardContent>
+            </Card>
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-xs sm:text-sm font-medium">
+                  Active Listings
+                </CardTitle>
+                <ShoppingBag className="h-4 w-4 text-blue-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl sm:text-2xl font-bold">
+                  {stats.activeListings}
+                </div>
+                <p className="text-xs text-muted-foreground">Live products</p>
+              </CardContent>
+            </Card>
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-xs sm:text-sm font-medium">
+                  Total Transactions
+                </CardTitle>
+                <Handshake className="h-4 w-4 text-purple-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl sm:text-2xl font-bold">
+                  {stats.totalTransactions}
+                </div>
+                <p className="text-xs text-muted-foreground">All orders</p>
+              </CardContent>
+            </Card>
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-xs sm:text-sm font-medium">
+                  Platform Revenue
+                </CardTitle>
+                <DollarSign className="h-4 w-4 text-amber-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl sm:text-2xl font-bold">
+                  ${stats.platformRevenue.toFixed(2)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  From completed sales
+                </p>
+              </CardContent>
+            </Card>
           </div>
 
           <Separator />
@@ -217,7 +329,7 @@ function AdminDashboard() {
                 >
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                      data={mockChartData}
+                      data={chartData}
                       margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
                     >
                       <CartesianGrid vertical={false} strokeDasharray="3 3" />
@@ -340,40 +452,51 @@ function AdminDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredTransactions.map((transaction) => (
-                      <TableRow key={transaction.id}>
-                        <TableCell className="font-medium w-[80px]">
-                          {transaction.id}
-                        </TableCell>
-                        <TableCell className="w-[100px] sm:w-auto">
-                          {transaction.seller}
-                        </TableCell>
-                        <TableCell className="w-[100px] sm:w-auto">
-                          {transaction.buyer}
-                        </TableCell>
-                        <TableCell className="max-w-[120px] sm:max-w-[150px] truncate">
-                          {transaction.item}
-                        </TableCell>
-                        <TableCell className="w-[90px]">
-                          {transaction.amount}
-                        </TableCell>
-                        <TableCell className="w-[100px]">
-                          <Badge
-                            className={cn(
-                              "text-xs",
-                              statusColors[
-                                transaction.status as keyof typeof statusColors
-                              ]
-                            )}
-                          >
-                            {transaction.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="w-[90px]">
-                          {transaction.date}
+                    {filteredTransactions.length > 0 ? (
+                      filteredTransactions.map((transaction) => (
+                        <TableRow key={transaction.id}>
+                          <TableCell className="font-medium w-[80px]">
+                            {transaction.id}
+                          </TableCell>
+                          <TableCell className="w-[100px] sm:w-auto">
+                            {transaction.seller}
+                          </TableCell>
+                          <TableCell className="w-[100px] sm:w-auto">
+                            {transaction.buyer}
+                          </TableCell>
+                          <TableCell className="max-w-[120px] sm:max-w-[150px] truncate">
+                            {transaction.item}
+                          </TableCell>
+                          <TableCell className="w-[90px]">
+                            {transaction.amount}
+                          </TableCell>
+                          <TableCell className="w-[100px]">
+                            <Badge
+                              className={cn(
+                                "text-xs",
+                                statusColors[
+                                  transaction.status as keyof typeof statusColors
+                                ]
+                              )}
+                            >
+                              {transaction.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="w-[90px]">
+                            {transaction.date}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={7}
+                          className="text-center text-muted-foreground py-8"
+                        >
+                          No recent transactions found.
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -384,30 +507,5 @@ function AdminDashboard() {
     </>
   );
 }
-
-// Helper component for chart legend
-const ChartLegend = ({ payload }: { payload?: any[] }) => {
-  if (!payload) return null;
-  return (
-    <ul className="flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-4 text-xs">
-      {payload.map((entry, index) => (
-        <li
-          key={`legend-${index}`}
-          className="capitalize flex items-center space-x-1"
-        >
-          <div className={`w-3 h-3 rounded-sm ${entry.color}`} />
-          <span>{entry.value}</span>
-        </li>
-      ))}
-    </ul>
-  );
-};
-
-type ChartConfig = {
-  [label: string]: {
-    label?: string;
-    color?: string;
-  };
-};
 
 export default AdminDashboard;
