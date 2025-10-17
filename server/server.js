@@ -9,6 +9,7 @@ import authRoutes from "./routes/auth.routes.js";
 import otpRoutes from "./routes/otp.routes.js";
 import productRoutes from "./routes/product.routes.js";
 import orderRoutes from "./routes/order.routes.js";
+import cartRoutes from "./routes/cart.routes.js";
 import { connectDB } from "./configs/db.js";
 
 const app = express();
@@ -47,6 +48,7 @@ app.use("/api/email-auth", authRoutes);
 app.use("/api/otp", otpRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/cart", cartRoutes);
 
 // ✅ Better-auth handler
 app.all("/api/auth/*splat", toNodeHandler(auth));
