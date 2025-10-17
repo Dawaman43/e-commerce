@@ -49,12 +49,10 @@ export const createProduct = async (req, res) => {
       : [];
 
     if (validatedPaymentOptions.length === 0) {
-      return res
-        .status(400)
-        .json({
-          error:
-            "At least one valid payment option with accountNumber is required.",
-        });
+      return res.status(400).json({
+        error:
+          "At least one valid payment option with accountNumber is required.",
+      });
     }
 
     const newProduct = await Product.create({
@@ -92,11 +90,10 @@ export const getProducts = async (req, res) => {
       order = "desc",
     } = req.query;
 
-    console.log("Full req.query:", req.query); // Keep
+    console.log("Full req.query:", req.query);
 
     const filter = {};
 
-    // ✅ Robust category guard
     if (
       category &&
       String(category).trim() &&
@@ -105,8 +102,6 @@ export const getProducts = async (req, res) => {
       const trimmedCat = String(category).trim();
       filter.category = { $regex: new RegExp(trimmedCat, "i") };
       console.log("Category filter added for:", trimmedCat);
-    } else {
-      console.log("No category filter - value invalid");
     }
 
     if (minPrice || maxPrice) {
@@ -117,7 +112,6 @@ export const getProducts = async (req, res) => {
 
     if (inStock === "true") filter.stock = { $gt: 0 };
 
-    // ✅ Robust search guard
     if (
       search &&
       String(search).trim() &&
@@ -129,11 +123,9 @@ export const getProducts = async (req, res) => {
         { description: { $regex: trimmedSearch, $options: "i" } },
       ];
       console.log("Added $or for search:", trimmedSearch);
-    } else {
-      console.log("No $or added - search empty/invalid");
     }
 
-    console.log("Final filter:", JSON.stringify(filter, null, 2)); // Keep
+    console.log("Final filter:", JSON.stringify(filter, null, 2));
 
     const total = await Product.countDocuments(filter);
 
@@ -141,26 +133,35 @@ export const getProducts = async (req, res) => {
       .skip((Number(page) - 1) * Number(limit))
       .limit(Number(limit))
       .sort({ [sortBy]: order === "desc" ? -1 : 1 })
-      .populate("seller", "name"); // Keep
+      .populate("seller", "name");
 
     console.log("Products found count:", products.length);
-    console.log(
-      "Sample product categories:",
-      products.map((p) => p.category)
-    ); // Keep
+
+    // Map products to include only the first payment option if exists
+    const productsWithPayment = products.map((p) => {
+      const chosenPayment =
+        p.paymentOptions && p.paymentOptions.length > 0
+          ? p.paymentOptions[0]
+          : null;
+      return {
+        ...p.toObject(),
+        chosenPayment,
+      };
+    });
 
     return res.status(200).json({
       message: "Products fetched successfully",
       page: Number(page),
       totalPages: Math.ceil(total / Number(limit)),
       totalProducts: total,
-      products,
+      products: productsWithPayment,
     });
   } catch (error) {
     console.error("Get products error:", error);
     res.status(500).json({ error: "Internal server error." });
   }
 };
+
 export const getProductById = async (req, res) => {
   try {
     const { id } = req.params;
