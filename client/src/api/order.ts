@@ -134,3 +134,11 @@ export const cancelOrder = async (orderId: string): Promise<OrderResponse> => {
   });
   return response;
 };
+
+export const acceptOrder = async (orderId: string): Promise<OrderResponse> => {
+  const response = await fetchClient(`${BASE_URL}/${orderId}/accept`, {
+    ...defaultOptions,
+    method: "PUT",
+  });
+  return response;
+};
