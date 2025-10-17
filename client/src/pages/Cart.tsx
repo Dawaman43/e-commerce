@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getCart, updateCartItem, removeCartItem, clearCart } from "@/api/cart";
+import { createOrder } from "@/api/order";
 import type { CartResponse, CartItem } from "@/types/cart";
 import {
   Card,
@@ -11,15 +12,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Loader2,
   AlertCircle,
   Trash2,
   ShoppingBag,
   ArrowLeft,
+  MessageSquare,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
 
 interface LocalCart {
   items: CartItem[];
@@ -31,6 +35,8 @@ const CartPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [ordering, setOrdering] = useState<string | null>(null); // Track which item is being ordered
+  const [message, setMessage] = useState(""); // Optional message to seller
   const navigate = useNavigate();
 
   const calculateTotal = (items: CartItem[]): number => {
@@ -116,8 +122,30 @@ const CartPage: React.FC = () => {
     }
   };
 
-  const handleCheckout = () => {
-    navigate("/checkout");
+  const handleOrderItem = async (item: CartItem) => {
+    if (!item.product._id) return;
+
+    try {
+      setOrdering(item.product._id);
+      // Assume CreateOrderPayload is { productId: string, quantity: number, message?: string }
+      const payload = {
+        productId: item.product._id,
+        quantity: item.quantity,
+        message: message.trim() || undefined,
+      };
+      const response = await createOrder(payload);
+      toast.success("Order created successfully!");
+      // Remove from cart after ordering
+      await handleRemoveItem(item.product._id);
+      // Navigate to order detail
+      navigate(`/orders/${response.order._id}`);
+    } catch (err: any) {
+      console.error("Failed to create order:", err);
+      toast.error("Failed to create order. Please try again.");
+    } finally {
+      setOrdering(null);
+      setMessage(""); // Reset message
+    }
   };
 
   if (loading) {
@@ -192,7 +220,7 @@ const CartPage: React.FC = () => {
                         Qty: {item.quantity}
                       </Badge>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 mb-2">
                       <Button
                         size="sm"
                         variant="outline"
@@ -241,6 +269,43 @@ const CartPage: React.FC = () => {
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
+                    <div className="space-y-2">
+                      <Textarea
+                        placeholder="Optional message to seller..."
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        className="min-h-[60px]"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => handleOrderItem(item)}
+                          disabled={
+                            ordering === item.product._id || !item.product._id
+                          }
+                          className="flex-1"
+                        >
+                          {ordering === item.product._id ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Creating Order...
+                            </>
+                          ) : (
+                            <>
+                              <MessageSquare className="h-4 w-4 mr-2" />
+                              Order Now
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRemoveItem(item.product._id)}
+                          disabled={updating}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </Card>
               ))}
@@ -250,23 +315,15 @@ const CartPage: React.FC = () => {
 
             <div className="flex justify-between items-center py-4">
               <div className="text-lg font-semibold">
-                Subtotal: ${cart.total.toFixed(2)}
+                Total Value: ${cart.total.toFixed(2)}
               </div>
-              <div className="space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={handleClearCart}
-                  disabled={updating}
-                >
-                  Clear Cart
-                </Button>
-                <Button
-                  onClick={handleCheckout}
-                  disabled={updating || cart.items.length === 0}
-                >
-                  Proceed to Checkout
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                onClick={handleClearCart}
+                disabled={updating}
+              >
+                Clear Cart
+              </Button>
             </div>
           </>
         )}

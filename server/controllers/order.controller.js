@@ -9,6 +9,7 @@ const allowedStatuses = [
   "shipped",
   "completed",
   "cancelled",
+  "accepted",
 ];
 
 export const createOrder = async (req, res) => {
@@ -178,10 +179,18 @@ export const updateOrderStatus = async (req, res) => {
       return res.status(404).json({ error: "Order not found" });
     }
 
-    order.status = status;
-
-    if (status === "shipped") order.deliveryStatus = "shipped";
-    if (status === "completed") order.deliveryStatus = "delivered";
+    if (status === "accepted") {
+      if (order.status !== "pending") {
+        return res
+          .status(400)
+          .json({ error: "Only pending orders can be accepted" });
+      }
+      order.status = "accepted";
+    } else {
+      order.status = status;
+      if (status === "shipped") order.deliveryStatus = "shipped";
+      if (status === "completed") order.deliveryStatus = "delivered";
+    }
 
     await order.save();
 
@@ -326,6 +335,41 @@ export const cancelOrder = async (req, res) => {
     res.status(200).json({ message: "Order cancelled successfully", order });
   } catch (error) {
     console.error("Cancel order error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+export const acceptOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const sellerId = req.user?.id;
+
+    if (!sellerId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.seller.toString() !== sellerId) {
+      return res
+        .status(403)
+        .json({ error: "You are not the seller of this order" });
+    }
+
+    if (order.status !== "pending") {
+      return res
+        .status(400)
+        .json({ error: `Cannot accept order in status "${order.status}"` });
+    }
+
+    order.status = "accepted";
+    await order.save();
+
+    res.status(200).json({ message: "Order accepted by seller", order });
+  } catch (error) {
+    console.error("Accept order error:", error);
     res.status(500).json({ error: "Server error" });
   }
 };
