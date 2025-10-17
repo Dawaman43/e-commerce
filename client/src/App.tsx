@@ -204,6 +204,14 @@ const App = ({ className }: AppProps) => {
           }
         />
         <Route
+          path="/order/accept"
+          element={
+            <ProtectedRoute>
+              <CartPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/notifications"
           element={
             <ProtectedRoute>
