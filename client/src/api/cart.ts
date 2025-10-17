@@ -1,6 +1,5 @@
 import { BACKEND_API_URL } from "@/configs/api";
 import type {
-  Cart,
   CartResponse,
   ClearCartResponse,
   AddCartItemPayload,
