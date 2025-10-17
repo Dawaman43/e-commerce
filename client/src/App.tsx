@@ -262,6 +262,7 @@ const App = ({ className }: AppProps) => {
         <Route path="/product/:id" element={<ProductPage />} />
         <Route path="/seller/:id" element={<SellerPage />} />
         <Route path="/categories/:id" element={<CategoryProductsPage />} />
+        <Route path="/SearchResult/:id" element={<SearchResultPage />} />
 
         {/* 404 Page */}
         <Route path="/*" element={<NotFoundPage />} />
