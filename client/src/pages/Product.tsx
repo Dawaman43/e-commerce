@@ -14,9 +14,12 @@ import {
   Calendar,
   DollarSign,
   Tag,
-  Truck, // ✅ Added missing import
+  Truck,
+  Loader2,
 } from "lucide-react";
 import { getProductById } from "@/api/product";
+import { addCartItem, removeCartItem, getCart } from "@/api/cart";
+import { toast } from "sonner";
 import type { Product } from "@/types/product";
 
 const containerVariants = {
@@ -41,6 +44,8 @@ function ProductPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [adding, setAdding] = useState(false);
+  const [inCart, setInCart] = useState(false);
 
   // ✅ ADD DEBUG LOG: Component mount
   console.log("=== PRODUCT PAGE DEBUG ===");
@@ -82,6 +87,49 @@ function ProductPage() {
 
     fetchProduct();
   }, [id]);
+
+  useEffect(() => {
+    if (!id) {
+      setInCart(false);
+      return;
+    }
+
+    const fetchCartStatus = async () => {
+      try {
+        const res = await getCart();
+        const items = res.cart?.items || [];
+        setInCart(items.some((item) => item.product._id === id));
+      } catch (err) {
+        console.error("Failed to fetch cart:", err);
+        setInCart(false);
+      }
+    };
+
+    fetchCartStatus();
+  }, [id]);
+
+  const handleToggleCart = async () => {
+    if (!id || !product) return;
+
+    try {
+      setAdding(true);
+      if (inCart) {
+        await removeCartItem(id);
+        toast.success("Removed from cart!");
+      } else {
+        await addCartItem({ productId: id, quantity: 1 });
+        toast.success("Product added to cart!");
+      }
+      setInCart(!inCart);
+    } catch (err) {
+      console.error("Failed to toggle cart:", err);
+      toast.error(
+        inCart ? "Failed to remove from cart." : "Failed to add to cart."
+      );
+    } finally {
+      setAdding(false);
+    }
+  };
 
   const handleNextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % (product?.images.length || 1));
@@ -280,9 +328,24 @@ function ProductPage() {
             </div>
 
             <div className="space-y-4">
-              <Button className="w-full h-12 text-lg" size="lg">
-                <ShoppingCart className="w-5 h-5 mr-2" />
-                Add to Cart
+              <Button
+                className="w-full h-12 text-lg"
+                size="lg"
+                variant={inCart ? "secondary" : "default"}
+                onClick={handleToggleCart}
+                disabled={adding}
+              >
+                {adding ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="w-5 h-5 mr-2" />
+                    {inCart ? "Remove from Cart" : "Add to Cart"}
+                  </>
+                )}
               </Button>
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1" size="lg">
