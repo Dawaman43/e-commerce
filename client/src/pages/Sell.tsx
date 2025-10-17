@@ -1,5 +1,4 @@
-import { motion, useInView } from "framer-motion";
-import { useRef, useState, type ChangeEvent } from "react";
+import { useState, type ChangeEvent } from "react";
 import {
   Upload,
   Image,
@@ -32,9 +31,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { easeOut } from "framer-motion";
+import { createProduct } from "@/api/product";
+import type { CreateProductPayload } from "@/types/product";
 
-// Mock categories
+// Static categories
 const categories = [
   { value: "electronics", label: "Electronics" },
   { value: "fashion", label: "Fashion" },
@@ -44,52 +44,20 @@ const categories = [
   { value: "music", label: "Musical Instruments" },
 ];
 
-// Animation variants
-const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: easeOut },
-  },
-};
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4 },
-  },
-};
-
-const hoverScale = {
-  hover: { scale: 1.05, transition: { duration: 0.2 } },
-  tap: { scale: 0.95 },
-};
-
 function SellPage() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.1 });
   const [formData, setFormData] = useState({
-    title: "",
+    name: "",
     description: "",
     price: "",
+    stock: "",
     category: "",
     location: "",
     images: [] as File[],
   });
   const [previewImages, setPreviewImages] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -100,28 +68,60 @@ function SellPage() {
     setPreviewImages((prev) => [...prev, ...newPreviews]);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission (e.g., API call)
-    console.log("Listing submitted:", formData);
-  };
+    if (
+      !formData.name ||
+      !formData.price ||
+      !formData.stock ||
+      formData.images.length === 0
+    ) {
+      setError(
+        "Please fill in all required fields and upload at least one image."
+      );
+      return;
+    }
 
-  // Reduced motion check
-  const shouldReduceMotion =
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const payload: CreateProductPayload = {
+      name: formData.name,
+      description: formData.description || undefined,
+      category: formData.category || undefined,
+      price: formData.price,
+      stock: formData.stock,
+      images: formData.images,
+    };
+
+    try {
+      setLoading(true);
+      setError(null);
+      setSuccess(false);
+      await createProduct(payload);
+      setSuccess(true);
+      // Reset form on success
+      setFormData({
+        name: "",
+        description: "",
+        price: "",
+        stock: "",
+        category: "",
+        location: "",
+        images: [],
+      });
+      setPreviewImages([]);
+    } catch (err) {
+      console.error("Failed to create product:", err);
+      setError("Failed to create listing. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Hero Section */}
       <section className="relative py-20 md:py-32 bg-gradient-to-br from-primary/10 to-muted/20">
         <div className="container mx-auto px-4 md:px-8 lg:px-16">
-          <motion.div
-            className="text-center max-w-4xl mx-auto"
-            initial="hidden"
-            animate={isInView ? "visible" : "hidden"}
-            variants={fadeInUp}
-          >
+          <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-foreground via-primary to-secondary bg-clip-text text-transparent mb-6">
               Sell Your Item
             </h1>
@@ -135,14 +135,10 @@ function SellPage() {
                 className="rounded-xl px-8 bg-primary hover:bg-primary/90"
                 asChild
               >
-                <motion.a
-                  href="#sell-form"
-                  whileHover={shouldReduceMotion ? {} : hoverScale}
-                  whileTap={shouldReduceMotion ? {} : { scale: 0.95 }}
-                >
+                <a href="#sell-form">
                   Start Listing
                   <ArrowRight className="w-5 h-5 ml-2" />
-                </motion.a>
+                </a>
               </Button>
               <Button
                 variant="outline"
@@ -153,19 +149,14 @@ function SellPage() {
                 <a href="/listings">Browse First</a>
               </Button>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
       {/* Sell Form */}
       <section id="sell-form" className="py-16 md:py-24 bg-background/50">
         <div className="container mx-auto px-4 md:px-8 lg:px-16">
-          <motion.div
-            className="text-center mb-16"
-            initial="hidden"
-            animate={isInView ? "visible" : "hidden"}
-            variants={fadeInUp}
-          >
+          <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Create Your Listing
             </h2>
@@ -173,18 +164,22 @@ function SellPage() {
               Fill in the details below to get your item in front of local
               buyers.
             </p>
-          </motion.div>
+          </div>
 
-          <motion.form
-            onSubmit={handleSubmit}
-            className="max-w-2xl mx-auto"
-            ref={ref}
-            variants={staggerContainer}
-            initial="hidden"
-            animate={isInView ? "visible" : "hidden"}
-          >
+          <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
+            {error && (
+              <div className="mb-4 p-4 bg-destructive/10 border border-destructive/30 rounded-md text-destructive">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="mb-4 p-4 bg-green-100 border border-green-300 rounded-md text-green-800">
+                Listing created successfully!
+              </div>
+            )}
+
             {/* Images Upload */}
-            <motion.div variants={itemVariants} className="mb-6">
+            <div className="mb-6">
               <Label htmlFor="images">Upload Photos (Up to 5)</Label>
               <div className="mt-2">
                 <input
@@ -200,6 +195,7 @@ function SellPage() {
                   variant="outline"
                   className="w-full justify-start"
                   onClick={() => document.getElementById("images")?.click()}
+                  disabled={loading}
                 >
                   <Upload className="w-4 h-4 mr-2" />
                   {formData.images.length === 0
@@ -219,30 +215,32 @@ function SellPage() {
                   ))}
                 </div>
               )}
-            </motion.div>
+            </div>
 
             {/* Title */}
-            <motion.div variants={itemVariants} className="mb-6">
-              <Label htmlFor="title">Item Title</Label>
+            <div className="mb-6">
+              <Label htmlFor="name">Item Title</Label>
               <Input
-                id="title"
+                id="name"
                 placeholder="e.g., Vintage Vinyl Record Player"
-                value={formData.title}
+                value={formData.name}
                 onChange={(e) =>
-                  setFormData({ ...formData, title: e.target.value })
+                  setFormData({ ...formData, name: e.target.value })
                 }
                 required
+                disabled={loading}
               />
-            </motion.div>
+            </div>
 
             {/* Category */}
-            <motion.div variants={itemVariants} className="mb-6">
+            <div className="mb-6">
               <Label htmlFor="category">Category</Label>
               <Select
                 value={formData.category}
                 onValueChange={(value) =>
                   setFormData({ ...formData, category: value })
                 }
+                disabled={loading}
               >
                 <SelectTrigger id="category">
                   <SelectValue placeholder="Select a category" />
@@ -255,10 +253,10 @@ function SellPage() {
                   ))}
                 </SelectContent>
               </Select>
-            </motion.div>
+            </div>
 
             {/* Description */}
-            <motion.div variants={itemVariants} className="mb-6">
+            <div className="mb-6">
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
@@ -269,11 +267,12 @@ function SellPage() {
                 }
                 rows={4}
                 required
+                disabled={loading}
               />
-            </motion.div>
+            </div>
 
             {/* Price */}
-            <motion.div variants={itemVariants} className="mb-6">
+            <div className="mb-6">
               <Label htmlFor="price">Price or Trade Offer</Label>
               <Input
                 id="price"
@@ -283,11 +282,29 @@ function SellPage() {
                   setFormData({ ...formData, price: e.target.value })
                 }
                 required
+                disabled={loading}
               />
-            </motion.div>
+            </div>
+
+            {/* Stock */}
+            <div className="mb-6">
+              <Label htmlFor="stock">Stock Quantity</Label>
+              <Input
+                id="stock"
+                type="number"
+                min="1"
+                placeholder="e.g., 5"
+                value={formData.stock}
+                onChange={(e) =>
+                  setFormData({ ...formData, stock: e.target.value })
+                }
+                required
+                disabled={loading}
+              />
+            </div>
 
             {/* Location */}
-            <motion.div variants={itemVariants} className="mb-6">
+            <div className="mb-6">
               <Label htmlFor="location">Location</Label>
               <Input
                 id="location"
@@ -297,33 +314,37 @@ function SellPage() {
                   setFormData({ ...formData, location: e.target.value })
                 }
                 required
+                disabled={loading}
               />
-            </motion.div>
+            </div>
 
-            <motion.div variants={itemVariants}>
-              <motion.button
+            <div>
+              <Button
                 type="submit"
                 className="w-full rounded-xl px-8 bg-primary hover:bg-primary/90 text-primary-foreground transition-colors"
-                whileHover={shouldReduceMotion ? {} : hoverScale}
-                whileTap={shouldReduceMotion ? {} : { scale: 0.95 }}
+                disabled={loading}
               >
-                Publish Listing
-                <Send className="w-5 h-5 ml-2" />
-              </motion.button>
-            </motion.div>
-          </motion.form>
+                {loading ? (
+                  <>
+                    <Clock className="w-5 h-5 mr-2 animate-spin" />
+                    Publishing...
+                  </>
+                ) : (
+                  <>
+                    Publish Listing
+                    <Send className="w-5 h-5 ml-2" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
         </div>
       </section>
 
       {/* Tips Section */}
       <section className="py-16 md:py-24 bg-muted/20">
         <div className="container mx-auto px-4 md:px-8 lg:px-16">
-          <motion.div
-            className="text-center mb-16"
-            initial="hidden"
-            animate={isInView ? "visible" : "hidden"}
-            variants={fadeInUp}
-          >
+          <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Tips for Successful Selling
             </h2>
@@ -331,15 +352,10 @@ function SellPage() {
               Maximize your listing's visibility and sales with these quick
               tips.
             </p>
-          </motion.div>
+          </div>
 
-          <motion.div
-            className="grid grid-cols-1 md:grid-cols-3 gap-6"
-            variants={staggerContainer}
-            initial="hidden"
-            animate={isInView ? "visible" : "hidden"}
-          >
-            <motion.div variants={itemVariants}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
               <Card className="h-full p-6 border-border hover:border-primary/50 transition-colors">
                 <CardHeader className="flex flex-row items-center gap-3 pb-4">
                   <Image className="w-6 h-6 text-primary" />
@@ -352,9 +368,9 @@ function SellPage() {
                   </CardDescription>
                 </CardContent>
               </Card>
-            </motion.div>
+            </div>
 
-            <motion.div variants={itemVariants}>
+            <div>
               <Card className="h-full p-6 border-border hover:border-primary/50 transition-colors">
                 <CardHeader className="flex flex-row items-center gap-3 pb-4">
                   <FileText className="w-6 h-6 text-primary" />
@@ -369,9 +385,9 @@ function SellPage() {
                   </CardDescription>
                 </CardContent>
               </Card>
-            </motion.div>
+            </div>
 
-            <motion.div variants={itemVariants}>
+            <div>
               <Card className="h-full p-6 border-border hover:border-primary/50 transition-colors">
                 <CardHeader className="flex flex-row items-center gap-3 pb-4">
                   <DollarSign className="w-6 h-6 text-primary" />
@@ -384,20 +400,15 @@ function SellPage() {
                   </CardDescription>
                 </CardContent>
               </Card>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* CTA Section */}
       <section className="py-16 md:py-24 bg-background/50">
         <div className="container mx-auto px-4 md:px-8 lg:px-16 text-center">
-          <motion.div
-            initial="hidden"
-            animate={isInView ? "visible" : "hidden"}
-            variants={fadeInUp}
-            className="max-w-2xl mx-auto"
-          >
+          <div className="max-w-2xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Ready to Sell?
             </h2>
@@ -410,16 +421,12 @@ function SellPage() {
               className="rounded-xl px-8 bg-primary hover:bg-primary/90"
               asChild
             >
-              <motion.a
-                href="#sell-form"
-                whileHover={shouldReduceMotion ? {} : hoverScale}
-                whileTap={shouldReduceMotion ? {} : { scale: 0.95 }}
-              >
+              <a href="#sell-form">
                 Back to Form
                 <ArrowRight className="w-5 h-5 ml-2" />
-              </motion.a>
+              </a>
             </Button>
-          </motion.div>
+          </div>
         </div>
       </section>
     </div>
