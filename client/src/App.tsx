@@ -32,6 +32,7 @@ import EditProductPage from "./pages/EditProduct";
 import CategoryProductsPage from "./pages/CategoryProducts";
 import OrderDetailPage from "./pages/OrderDetail";
 import AdminUserBanPage from "./pages/AdminUserBan";
+import SearchResultPage from "./pages/SearchResult";
 
 interface AppProps {
   className?: string;
