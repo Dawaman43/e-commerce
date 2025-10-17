@@ -230,7 +230,7 @@ function OrderHistory() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-1 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            <h2 className="text-2xl md:text-3xl font-bold  mb-1 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
               Order History
             </h2>
             <p className="text-muted-foreground text-sm">
