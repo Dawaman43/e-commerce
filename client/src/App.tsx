@@ -30,6 +30,7 @@ import UsersPage from "./pages/Users";
 import ModeratorDashboard from "./pages/ModeratorDashboard";
 import EditProductPage from "./pages/EditProduct";
 import CategoryProductsPage from "./pages/CategoryProducts";
+import OrderDetailPage from "./pages/OrderDetail";
 
 interface AppProps {
   className?: string;
@@ -204,6 +205,15 @@ const App = ({ className }: AppProps) => {
           element={
             <ProtectedRoute>
               <OrdersPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/orders/:id"
+          element={
+            <ProtectedRoute>
+              <OrderDetailPage />
             </ProtectedRoute>
           }
         />
