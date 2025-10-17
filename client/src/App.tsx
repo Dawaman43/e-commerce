@@ -33,6 +33,7 @@ import CategoryProductsPage from "./pages/CategoryProducts";
 import OrderDetailPage from "./pages/OrderDetail";
 import AdminUserBanPage from "./pages/AdminUserBan";
 import SearchResultPage from "./pages/SearchResult";
+import CartPage from "./pages/Cart";
 
 interface AppProps {
   className?: string;
@@ -191,6 +192,14 @@ const App = ({ className }: AppProps) => {
           element={
             <ProtectedRoute>
               <InboxPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cart"
+          element={
+            <ProtectedRoute>
+              <CartPage />
             </ProtectedRoute>
           }
         />
