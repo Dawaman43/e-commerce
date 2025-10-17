@@ -31,6 +31,7 @@ import ModeratorDashboard from "./pages/ModeratorDashboard";
 import EditProductPage from "./pages/EditProduct";
 import CategoryProductsPage from "./pages/CategoryProducts";
 import OrderDetailPage from "./pages/OrderDetail";
+import AdminUserBanPage from "./pages/AdminUserBan";
 
 interface AppProps {
   className?: string;
@@ -230,6 +231,7 @@ const App = ({ className }: AppProps) => {
         <Route path="/admin" element={<RoleRoute allowedRoles={["admin"]} />}>
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="users" element={<UsersPage />} />
+          <Route path="users/ban" element={<AdminUserBanPage />} />
           <Route index element={<Navigate to="dashboard" replace />} />
         </Route>
 
