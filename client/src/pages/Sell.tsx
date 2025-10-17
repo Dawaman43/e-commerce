@@ -3,7 +3,6 @@ import {
   Upload,
   Image,
   Tag,
-  DollarSign,
   MapPin,
   FileText,
   Send,
@@ -11,6 +10,7 @@ import {
   Clock,
   Calendar,
   User,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { createProduct } from "@/api/product";
 import type { CreateProductPayload } from "@/types/product";
 
@@ -44,6 +45,18 @@ const categories = [
   { value: "music", label: "Musical Instruments" },
 ];
 
+// Payment options
+const paymentOptions = [
+  { id: "bank_transfer", label: "Bank Transfer" },
+  { id: "telebirr", label: "TeleBirr" },
+  { id: "mepesa", label: "MePeSa" },
+];
+
+type PaymentOption = {
+  method: "bank_transfer" | "telebirr" | "mepesa";
+  accountNumber: string;
+};
+
 function SellPage() {
   const [formData, setFormData] = useState({
     name: "",
@@ -53,6 +66,7 @@ function SellPage() {
     category: "",
     location: "",
     images: [] as File[],
+    paymentOptions: [] as PaymentOption[],
   });
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -68,16 +82,80 @@ function SellPage() {
     setPreviewImages((prev) => [...prev, ...newPreviews]);
   };
 
+  const handlePaymentOptionChange = (
+    optionId: "bank_transfer" | "telebirr" | "mepesa"
+  ) => {
+    setFormData((prev) => {
+      const currentOptions = prev.paymentOptions;
+      if (currentOptions.some((opt) => opt.method === optionId)) {
+        return {
+          ...prev,
+          paymentOptions: currentOptions.filter(
+            (opt) => opt.method !== optionId
+          ),
+        };
+      } else {
+        return {
+          ...prev,
+          paymentOptions: [
+            ...currentOptions,
+            { method: optionId, accountNumber: "" },
+          ],
+        };
+      }
+    });
+  };
+
+  const handleAccountNumberChange = (
+    method: "bank_transfer" | "telebirr" | "mepesa",
+    value: string
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      paymentOptions: prev.paymentOptions.map((opt) =>
+        opt.method === method ? { ...opt, accountNumber: value } : opt
+      ),
+    }));
+  };
+
+  const getAccountLabel = (method: string): string => {
+    switch (method) {
+      case "bank_transfer":
+        return "Bank Account Number";
+      case "telebirr":
+        return "TeleBirr Phone Number";
+      case "mepesa":
+        return "MePeSa Phone Number";
+      default:
+        return "Account Number";
+    }
+  };
+
+  const getAccountPlaceholder = (method: string): string => {
+    switch (method) {
+      case "bank_transfer":
+        return "e.g., 1234567890";
+      case "telebirr":
+        return "e.g., +251911234567";
+      case "mepesa":
+        return "e.g., +251911234567";
+      default:
+        return "Enter account number";
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (
       !formData.name ||
       !formData.price ||
       !formData.stock ||
-      formData.images.length === 0
+      formData.images.length === 0 ||
+      formData.paymentOptions.length === 0 ||
+      formData.paymentOptions.some((p) => !p.accountNumber.trim())
     ) {
       setError(
-        "Please fill in all required fields and upload at least one image."
+        "Please fill in all required fields, upload at least one image, select at least one payment method, and provide account details for each."
       );
       return;
     }
@@ -89,6 +167,7 @@ function SellPage() {
       price: formData.price,
       stock: formData.stock,
       images: formData.images,
+      paymentOptions: formData.paymentOptions,
     };
 
     try {
@@ -106,6 +185,7 @@ function SellPage() {
         category: "",
         location: "",
         images: [],
+        paymentOptions: [],
       });
       setPreviewImages([]);
     } catch (err) {
@@ -276,7 +356,7 @@ function SellPage() {
               <Label htmlFor="price">Price or Trade Offer</Label>
               <Input
                 id="price"
-                placeholder="e.g., $150 or Trade for PS5"
+                placeholder="e.g., 1500 Birr or Trade for PS5"
                 value={formData.price}
                 onChange={(e) =>
                   setFormData({ ...formData, price: e.target.value })
@@ -284,6 +364,67 @@ function SellPage() {
                 required
                 disabled={loading}
               />
+            </div>
+
+            {/* Payment Options */}
+            <div className="mb-6">
+              <Label>Payment Methods *</Label>
+              <div className="mt-2 space-y-2">
+                {paymentOptions.map((option) => (
+                  <div key={option.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={option.id}
+                      checked={formData.paymentOptions.some(
+                        (opt) => opt.method === option.id
+                      )}
+                      onCheckedChange={() =>
+                        handlePaymentOptionChange(option.id as any)
+                      }
+                      disabled={loading}
+                    />
+                    <Label
+                      htmlFor={option.id}
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      {option.label}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+              {formData.paymentOptions.length > 0 && (
+                <div className="mt-4 space-y-4">
+                  {formData.paymentOptions.map((opt) => (
+                    <div key={opt.method} className="pt-2 border-t">
+                      <Label htmlFor={`account-${opt.method}`}>
+                        {getAccountLabel(opt.method)} *
+                      </Label>
+                      <Input
+                        id={`account-${opt.method}`}
+                        placeholder={getAccountPlaceholder(opt.method)}
+                        value={opt.accountNumber}
+                        onChange={(e) =>
+                          handleAccountNumberChange(opt.method, e.target.value)
+                        }
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+              {formData.paymentOptions.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {formData.paymentOptions.map((opt) => (
+                    <Badge
+                      key={opt.method}
+                      variant="secondary"
+                      className="text-xs"
+                    >
+                      {paymentOptions.find((p) => p.id === opt.method)?.label}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Stock */}
@@ -308,7 +449,7 @@ function SellPage() {
               <Label htmlFor="location">Location</Label>
               <Input
                 id="location"
-                placeholder="e.g., Brooklyn, NY"
+                placeholder="e.g., Addis Ababa"
                 value={formData.location}
                 onChange={(e) =>
                   setFormData({ ...formData, location: e.target.value })
@@ -390,7 +531,7 @@ function SellPage() {
             <div>
               <Card className="h-full p-6 border-border hover:border-primary/50 transition-colors">
                 <CardHeader className="flex flex-row items-center gap-3 pb-4">
-                  <DollarSign className="w-6 h-6 text-primary" />
+                  <Check className="w-6 h-6 text-primary" />
                   <CardTitle className="text-lg">Competitive Pricing</CardTitle>
                 </CardHeader>
                 <CardContent>

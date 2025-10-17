@@ -1,3 +1,5 @@
+// product.d.ts
+
 export interface Review {
   _id: string;
   user: {
@@ -6,6 +8,11 @@ export interface Review {
   };
   comment: string;
   rating: number;
+}
+
+export interface PaymentOption {
+  method: "bank_transfer" | "telebirr" | "mepesa";
+  accountNumber: string; // seller's account/phone number
 }
 
 export interface Product {
@@ -23,31 +30,22 @@ export interface Product {
     name: string;
     email?: string; // Populated in some endpoints
   };
+  paymentOptions?: PaymentOption[]; // NEW
   createdAt?: string;
   updatedAt?: string;
-  // Missing fields from frontend: type, location, favorites - add defaults or extend backend if needed
   type?: "sell" | "trade"; // Optional, as backend doesn't have it
   location?: string; // Optional, as backend doesn't have it
   favorites?: number; // Optional, as backend doesn't have it
 }
 
-// For frontend usage, you can create a mapped type if needed:
-// export type FrontendProduct = {
-//   id: Product['_id'];
-//   image: Product['images'][0] | string; // First image or default
-//   title: Product['name'];
-//   seller: Product['seller']['name'];
-//   // ... etc.
-// };
-
 export interface CreateProductPayload {
-  name: string; // Backend expects 'name', not 'title'
+  name: string;
   description?: string;
   category?: string;
   price: string;
   stock?: string;
-  images?: File[]; // Backend expects 'images' (plural)
-  // No 'type' or 'location' in backend create
+  images?: File[];
+  paymentOptions?: PaymentOption[];
 }
 
 export interface UpdateProductPayload {
@@ -58,6 +56,7 @@ export interface UpdateProductPayload {
   stock?: string;
   images?: File[];
   existingImages?: string[];
+  paymentOptions?: PaymentOption[];
 }
 
 export interface AddReviewPayload {
@@ -80,7 +79,7 @@ export interface DecrementStockPayload {
 
 export interface ProductResponse {
   message: string;
-  product: Product; // Backend uses 'product', not 'data'
+  product: Product;
 }
 
 export interface ProductsResponse {
@@ -88,7 +87,7 @@ export interface ProductsResponse {
   page: number;
   totalPages: number;
   totalProducts: number;
-  products: Product[]; // Backend uses 'products', not 'data'
+  products: Product[];
 }
 
 export interface ReviewResponse {

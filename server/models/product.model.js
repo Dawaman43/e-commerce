@@ -24,11 +24,16 @@ const productSchema = new mongoose.Schema(
       },
     ],
 
-    paymentOptions: {
-      type: [String],
-      enum: ["bank_transfer", "telebirr", "mepesa"],
-      default: ["bank_transfer"],
-    },
+    paymentOptions: [
+      {
+        method: {
+          type: String,
+          enum: ["bank_transfer", "telebirr", "mepesa"],
+          required: true,
+        },
+        accountNumber: { type: String, required: true },
+      },
+    ],
   },
   {
     timestamps: true,

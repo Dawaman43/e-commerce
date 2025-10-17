@@ -42,7 +42,7 @@ const formatDate = (dateStr?: string): string => {
   });
 };
 
-type StatusKey = OrderStatus;
+type StatusKey = OrderStatus | "unknown";
 
 const statusConfig: Record<
   StatusKey,
@@ -77,6 +77,11 @@ const statusConfig: Record<
     icon: XCircle,
     color: "bg-red-100 text-red-800",
     label: "Cancelled",
+  },
+  unknown: {
+    icon: Clock,
+    color: "bg-gray-100 text-gray-800",
+    label: "Unknown",
   },
 };
 
@@ -133,8 +138,9 @@ function OrdersPage() {
     const matchesSearch =
       order._id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       getSellerName(order).toLowerCase().includes(searchTerm.toLowerCase());
+    const orderStatus = order.status as StatusKey;
     const matchesStatus =
-      selectedStatuses.size === 0 || selectedStatuses.has(order.status);
+      selectedStatuses.size === 0 || selectedStatuses.has(orderStatus);
     return matchesSearch && matchesStatus;
   });
 
@@ -229,9 +235,12 @@ function OrdersPage() {
               ) : (
                 <div className="space-y-6">
                   {filteredOrders.map((order) => {
-                    const StatusIcon = statusConfig[order.status].icon;
-                    const statusColor = statusConfig[order.status].color;
-                    const statusLabel = statusConfig[order.status].label;
+                    const orderStatus = order.status as StatusKey;
+                    const status =
+                      statusConfig[orderStatus] || statusConfig.unknown;
+                    const StatusIcon = status.icon;
+                    const statusColor = status.color;
+                    const statusLabel = status.label;
                     const item = {
                       name: getItemName(order),
                       qty: order.quantity,

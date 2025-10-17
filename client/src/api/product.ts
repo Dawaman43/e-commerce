@@ -32,8 +32,18 @@ export const createProduct = async (
   if (data.category) formData.append("category", data.category);
   formData.append("price", data.price);
   if (data.stock) formData.append("stock", data.stock);
-  if (data.images) {
+  if (data.images)
     data.images.forEach((file) => formData.append("images", file));
+
+  // Append payment options correctly
+  if (data.paymentOptions) {
+    data.paymentOptions.forEach((opt, index) => {
+      formData.append(`paymentOptions[${index}][method]`, opt.method);
+      formData.append(
+        `paymentOptions[${index}][accountNumber]`,
+        opt.accountNumber
+      );
+    });
   }
 
   const response = await fetchClient(`${BASE_URL}/`, {

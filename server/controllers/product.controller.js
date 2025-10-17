@@ -36,11 +36,26 @@ export const createProduct = async (req, res) => {
       );
     }
 
-    // Ensure only allowed payment options are saved
-    const allowedOptions = ["bank_transfer", "tellebir", "mepesa"];
-    const filteredPaymentOptions = (paymentOptions || ["bank_transfer"]).filter(
-      (opt) => allowedOptions.includes(opt)
-    );
+    // Validate payment options
+    const allowedOptions = ["bank_transfer", "telebirr", "mepesa"];
+    const validatedPaymentOptions = Array.isArray(paymentOptions)
+      ? paymentOptions.filter(
+          (opt) =>
+            opt.method &&
+            allowedOptions.includes(opt.method) &&
+            opt.accountNumber &&
+            opt.accountNumber.trim() !== ""
+        )
+      : [];
+
+    if (validatedPaymentOptions.length === 0) {
+      return res
+        .status(400)
+        .json({
+          error:
+            "At least one valid payment option with accountNumber is required.",
+        });
+    }
 
     const newProduct = await Product.create({
       seller: req.user._id,
@@ -50,7 +65,7 @@ export const createProduct = async (req, res) => {
       price,
       stock,
       images: uploadedImages,
-      paymentOptions: filteredPaymentOptions,
+      paymentOptions: validatedPaymentOptions,
     });
 
     return res.status(201).json({
