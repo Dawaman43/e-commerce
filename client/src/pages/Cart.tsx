@@ -14,12 +14,22 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Loader2,
   AlertCircle,
   Trash2,
   ShoppingBag,
   ArrowLeft,
   MessageSquare,
+  Check,
+  X,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
@@ -35,8 +45,10 @@ const CartPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
-  const [ordering, setOrdering] = useState<string | null>(null); // Track which item is being ordered
-  const [message, setMessage] = useState(""); // Optional message to seller
+  const [ordering, setOrdering] = useState<string | null>(null);
+  const [messages, setMessages] = useState<{ [key: string]: string }>({});
+  const [selectedItem, setSelectedItem] = useState<CartItem | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
 
   const calculateTotal = (items: CartItem[]): number => {
@@ -77,15 +89,14 @@ const CartPage: React.FC = () => {
 
     try {
       setUpdating(true);
-      const response: CartResponse = await updateCartItem(productId, {
+      await updateCartItem(productId, {
         quantity: newQuantity,
       });
-      const items = response.cart?.items || [];
-      setCart({ items, total: calculateTotal(items) });
+      await fetchCart();
     } catch (err: any) {
       console.error("Failed to update cart item:", err);
       setError("Failed to update quantity. Please try again.");
-      fetchCart(); // Refetch to revert
+      await fetchCart(); // Refetch to revert
     } finally {
       setUpdating(false);
     }
@@ -94,13 +105,18 @@ const CartPage: React.FC = () => {
   const handleRemoveItem = async (productId: string) => {
     try {
       setUpdating(true);
-      const response: CartResponse = await removeCartItem(productId);
-      const items = response.cart?.items || [];
-      setCart({ items, total: calculateTotal(items) });
+      await removeCartItem(productId);
+      await fetchCart();
+      // Clean up message for removed item
+      setMessages((prev) => {
+        const newMessages = { ...prev };
+        delete newMessages[productId];
+        return newMessages;
+      });
     } catch (err: any) {
       console.error("Failed to remove cart item:", err);
       setError("Failed to remove item. Please try again.");
-      fetchCart(); // Refetch to revert
+      await fetchCart(); // Refetch to revert
     } finally {
       setUpdating(false);
     }
@@ -113,38 +129,50 @@ const CartPage: React.FC = () => {
       setUpdating(true);
       await clearCart();
       setCart({ items: [], total: 0 });
+      setMessages({});
     } catch (err: any) {
       console.error("Failed to clear cart:", err);
       setError("Failed to clear cart. Please try again.");
-      fetchCart(); // Refetch to revert
+      await fetchCart(); // Refetch to revert
     } finally {
       setUpdating(false);
     }
   };
 
-  const handleOrderItem = async (item: CartItem) => {
-    if (!item.product._id) return;
+  const handleOpenOrderModal = (item: CartItem) => {
+    setSelectedItem(item);
+    setIsOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsOpen(false);
+    setSelectedItem(null);
+  };
+
+  const handleConfirmOrder = async () => {
+    if (!selectedItem || !selectedItem.product._id) return;
 
     try {
-      setOrdering(item.product._id);
-      // Assume CreateOrderPayload is { productId: string, quantity: number, message?: string }
+      setOrdering(selectedItem.product._id);
+      const sellerId =
+        typeof selectedItem.product.seller === "string"
+          ? selectedItem.product.seller
+          : selectedItem.product.seller._id;
       const payload = {
-        productId: item.product._id,
-        quantity: item.quantity,
-        message: message.trim() || undefined,
+        seller: sellerId,
+        product: selectedItem.product._id,
+        quantity: selectedItem.quantity,
       };
       const response = await createOrder(payload);
       toast.success("Order created successfully!");
-      // Remove from cart after ordering
-      await handleRemoveItem(item.product._id);
-      // Navigate to order detail
+      handleCloseModal();
+      await fetchCart(); // Refresh cart
       navigate(`/orders/${response.order._id}`);
     } catch (err: any) {
       console.error("Failed to create order:", err);
       toast.error("Failed to create order. Please try again.");
     } finally {
       setOrdering(null);
-      setMessage(""); // Reset message
     }
   };
 
@@ -192,130 +220,198 @@ const CartPage: React.FC = () => {
           </div>
         ) : (
           <>
-            <div className="space-y-4 mb-8">
-              {cart.items.map((item) => (
-                <Card
-                  key={item.product._id}
-                  className="flex flex-row items-center p-4"
-                >
-                  <CardHeader className="w-24 h-24 flex-shrink-0 p-0 mr-4">
-                    <img
-                      src={item.product.images?.[0] || "/placeholder.svg"}
-                      alt={item.product.name}
-                      className="w-full h-full object-cover rounded-md"
-                    />
-                  </CardHeader>
-                  <div className="flex-1">
-                    <CardTitle className="text-lg mb-1">
-                      {item.product.name}
-                    </CardTitle>
-                    <CardDescription className="text-sm text-muted-foreground mb-2">
-                      {item.product.description?.substring(0, 100)}...
-                    </CardDescription>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-lg font-semibold">
-                        ${item.product.price}
-                      </span>
-                      <Badge variant="outline" className="text-xs">
-                        Qty: {item.quantity}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center space-x-2 mb-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          handleUpdateQuantity(
-                            item.product._id,
-                            item.quantity - 1
-                          )
-                        }
-                        disabled={updating}
-                      >
-                        -
-                      </Button>
-                      <Input
-                        type="number"
-                        value={item.quantity}
-                        onChange={(e) =>
-                          handleUpdateQuantity(
-                            item.product._id,
-                            parseInt(e.target.value) || 1
-                          )
-                        }
-                        className="w-16 text-center"
-                        min={1}
-                        disabled={updating}
-                      />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          handleUpdateQuantity(
-                            item.product._id,
-                            item.quantity + 1
-                          )
-                        }
-                        disabled={updating}
-                      >
-                        +
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleRemoveItem(item.product._id)}
-                        disabled={updating}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="space-y-2">
-                      <Textarea
-                        placeholder="Optional message to seller..."
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        className="min-h-[60px]"
-                      />
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => handleOrderItem(item)}
-                          disabled={
-                            ordering === item.product._id || !item.product._id
-                          }
-                          className="flex-1"
-                        >
-                          {ordering === item.product._id ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Creating Order...
-                            </>
-                          ) : (
-                            <>
-                              <MessageSquare className="h-4 w-4 mr-2" />
-                              Order Now
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleRemoveItem(item.product._id)}
-                          disabled={updating}
-                        >
-                          Remove
-                        </Button>
+            <div className="space-y-6 mb-8">
+              {cart.items.map((item) => {
+                const itemTotal =
+                  parseFloat(item.product.price as string) * item.quantity;
+                const itemMessage = messages[item.product._id] || "";
+
+                return (
+                  <Card key={item.product._id} className="overflow-hidden">
+                    <div className="flex flex-row p-4">
+                      <div className="w-24 h-24 flex-shrink-0 mr-4">
+                        <img
+                          src={item.product.images?.[0] || "/placeholder.svg"}
+                          alt={item.product.name}
+                          className="w-full h-full object-cover rounded-md"
+                        />
+                      </div>
+                      <div className="flex-1 space-y-3">
+                        <CardTitle className="text-lg font-semibold">
+                          {item.product.name}
+                        </CardTitle>
+                        <CardDescription className="text-sm text-muted-foreground">
+                          {item.product.description?.substring(0, 100)}...
+                        </CardDescription>
+                        <div className="flex items-center justify-between">
+                          <span className="text-lg font-bold">
+                            ${item.product.price}
+                          </span>
+                          <Badge variant="outline" className="text-xs">
+                            Subtotal: ${itemTotal.toFixed(2)}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              handleUpdateQuantity(
+                                item.product._id,
+                                item.quantity - 1
+                              )
+                            }
+                            disabled={updating}
+                          >
+                            -
+                          </Button>
+                          <Input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) =>
+                              handleUpdateQuantity(
+                                item.product._id,
+                                parseInt(e.target.value) || 1
+                              )
+                            }
+                            className="w-16 text-center"
+                            min={1}
+                            disabled={updating}
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              handleUpdateQuantity(
+                                item.product._id,
+                                item.quantity + 1
+                              )
+                            }
+                            disabled={updating}
+                          >
+                            +
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleRemoveItem(item.product._id)}
+                            disabled={updating}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="space-y-3">
+                          <Textarea
+                            placeholder="Optional message to seller..."
+                            value={itemMessage}
+                            onChange={(e) =>
+                              setMessages((prev) => ({
+                                ...prev,
+                                [item.product._id]: e.target.value,
+                              }))
+                            }
+                            className="min-h-[60px] resize-none"
+                          />
+                          <Button
+                            onClick={() => handleOpenOrderModal(item)}
+                            disabled={ordering === item.product._id}
+                            className="w-full"
+                          >
+                            {ordering === item.product._id ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Preparing...
+                              </>
+                            ) : (
+                              <>
+                                <MessageSquare className="h-4 w-4 mr-2" />
+                                Order Now
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                );
+              })}
             </div>
+
+            <Dialog
+              open={isOpen}
+              onOpenChange={(open) => {
+                setIsOpen(open);
+                if (!open) {
+                  setSelectedItem(null);
+                }
+              }}
+            >
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Confirm Order</DialogTitle>
+                  <DialogDescription>
+                    Review your order details before sending to the seller.
+                  </DialogDescription>
+                </DialogHeader>
+                {selectedItem && (
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-1">
+                      <h3 className="font-semibold">
+                        {selectedItem.product.name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Quantity: {selectedItem.quantity}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Price: ${selectedItem.product.price}
+                      </p>
+                      <p className="text-lg font-bold text-primary">
+                        Total: $
+                        {(
+                          parseFloat(selectedItem.product.price as string) *
+                          selectedItem.quantity
+                        ).toFixed(2)}
+                      </p>
+                    </div>
+                    {messages[selectedItem.product._id] && (
+                      <div className="p-3 bg-muted rounded-md">
+                        <p className="text-sm font-medium mb-1">Message:</p>
+                        <p className="text-sm">
+                          {messages[selectedItem.product._id]}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <DialogFooter>
+                  <Button variant="outline" onClick={handleCloseModal}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleConfirmOrder}
+                    disabled={ordering === selectedItem?.product._id}
+                  >
+                    {ordering === selectedItem?.product._id ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-4 w-4 mr-2" />
+                        Confirm & Send
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             <Separator />
 
-            <div className="flex justify-between items-center py-4">
+            <div className="flex justify-between items-center py-4 bg-muted/50 rounded-md p-4">
               <div className="text-lg font-semibold">
-                Total Value: ${cart.total.toFixed(2)}
+                Cart Total: ${cart.total.toFixed(2)}
               </div>
               <Button
                 variant="outline"
