@@ -12,7 +12,6 @@ import {
   MessageCircle,
   User,
   Calendar,
-  DollarSign,
   Tag,
   Truck,
   Loader2,
@@ -33,6 +32,19 @@ const containerVariants = {
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0 },
+};
+
+const getPaymentMethodLabel = (method: string): string => {
+  switch (method) {
+    case "bank_transfer":
+      return "Bank Transfer";
+    case "telebirr":
+      return "TeleBirr";
+    case "mepesa":
+      return "MePeSa";
+    default:
+      return method;
+  }
 };
 
 function ProductPage() {
@@ -294,9 +306,8 @@ function ProductPage() {
                 {product.name || "Unnamed Product"} {/* ✅ Fallback */}
               </h1>
               <div className="flex items-center gap-2 mb-4">
-                <DollarSign className="w-5 h-5 text-primary" />
                 <span className="text-2xl font-bold text-primary">
-                  ${product.price || "0.00"} {/* ✅ Fallback & $ prefix */}
+                  {product.price || "0.00"} Birr {/* ✅ Fallback & Birr */}
                 </span>
               </div>
             </div>
@@ -323,6 +334,28 @@ function ProductPage() {
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <span className="w-4 h-4">⭐</span>
                   <span>{product.rating} rating</span>
+                </div>
+              )}
+              {product.paymentOptions && product.paymentOptions.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <span className="w-4 h-4">💳</span>
+                    <span>Payment Options</span>
+                  </div>
+                  <div className="ml-6 space-y-1">
+                    {product.paymentOptions.map((option, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-2 text-sm text-muted-foreground"
+                      >
+                        <span>•</span>
+                        <span>
+                          {getPaymentMethodLabel(option.method)} -{" "}
+                          {option.accountNumber}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

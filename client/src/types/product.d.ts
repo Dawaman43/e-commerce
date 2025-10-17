@@ -17,8 +17,8 @@ export interface PaymentOption {
 
 export interface Product {
   _id: string;
-  images: string[]; // Array of image URLs
-  name: string; // Backend field; can alias to 'title' if preferred
+  images: string[];
+  name: string;
   price: string;
   category: string;
   description?: string;
@@ -28,14 +28,15 @@ export interface Product {
   seller: {
     _id: string;
     name: string;
-    email?: string; // Populated in some endpoints
+    email?: string;
   };
-  paymentOptions?: PaymentOption[]; // NEW
+  paymentOptions?: PaymentOption[];
+  chosenPayment?: PaymentOption; // NEW: first payment option for display
   createdAt?: string;
   updatedAt?: string;
-  type?: "sell" | "trade"; // Optional, as backend doesn't have it
-  location?: string; // Optional, as backend doesn't have it
-  favorites?: number; // Optional, as backend doesn't have it
+  type?: "sell" | "trade";
+  location?: string;
+  favorites?: number;
 }
 
 export interface CreateProductPayload {
@@ -87,7 +88,7 @@ export interface ProductsResponse {
   page: number;
   totalPages: number;
   totalProducts: number;
-  products: Product[];
+  products: Product[]; // now includes chosenPayment
 }
 
 export interface ReviewResponse {
