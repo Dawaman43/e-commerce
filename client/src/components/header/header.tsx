@@ -2,7 +2,15 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, X, LogOut, User, Settings, HelpCircle } from "lucide-react";
+import {
+  Menu,
+  X,
+  LogOut,
+  User,
+  Settings,
+  HelpCircle,
+  ShoppingCart,
+} from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import ToggleTheme from "../toggle-theme";
 import SearchBar from "./searchBar";
@@ -152,6 +160,12 @@ function Header() {
           {/* Right section: User actions - Enhanced with more shadcn components */}
           <div className="hidden sm:flex items-center space-x-2 flex-shrink-0">
             <ToggleTheme />
+            <Button variant="ghost" size="icon" asChild>
+              <Link to="/cart" className="h-8 w-8">
+                <ShoppingCart className="h-5 w-5" />
+                <span className="sr-only">Cart</span>
+              </Link>
+            </Button>
             <UserAvatar />
           </div>
 
@@ -241,6 +255,17 @@ function Header() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      <Button
+                        variant="ghost"
+                        className="justify-start"
+                        asChild
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Link to="/cart">
+                          <ShoppingCart className="mr-2 h-4 w-4" />
+                          Cart
+                        </Link>
+                      </Button>
                       <Button
                         variant="ghost"
                         className="justify-start"
